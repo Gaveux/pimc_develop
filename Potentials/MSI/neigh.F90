@@ -27,12 +27,12 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   ! the size of array r and pot(i)%r mismatch, this is a bug!!
   ! however it gives the correct result with a faster computing efficiency
   ! than the fixed version below
-  !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight)
+  !$acc kernels
   RawWeight = 0.d0
   do i=1,interp%ndata
      RawWeight(i) = 1.0/(sum((r-pot(i)%r)**2)**interp%ipow)
   enddo
-  !$OMP END PARALLEL DO
+  !$acc end kernels
   totsum = sum(RawWeight)
   
    

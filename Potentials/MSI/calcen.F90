@@ -35,11 +35,11 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR)
     !---------------------------------------------------
     !  Calculate the Weights 
     !---------------------------------------------------
-    !$OMP PARALLEL DO PRIVATE(i) SHARED(Raw, Weight)
+    !$acc kernels 
     do i=1,neigh%numInner
         Raw(i) = Weight(neigh%inner(i))
     enddo
-    !$OMP END PARALLEL DO 
+    !$acc end kernels
       
     totsum = sum(Raw(1:neigh%numInner))
     Weight = Raw/totsum
