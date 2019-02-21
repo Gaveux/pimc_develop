@@ -1,0 +1,445 @@
+module Potential_HCN
+    use molecule_specs
+    implicit none
+
+    !Currently, the way this is implemented the potential evaluations cannot be evaluated in parallel as
+    !the values below are allocated once as module globals and hence we will have issues with multiple 
+    !threads accessing these values at the same time (BAD!!!) if we attempt to parallelise these evaluation.
+    !This can be overcome by storing these parameters in a type that is passed to the potential subroutine 
+    !by each thread so that each thread has its own set of these parameters allocated on its stack.
+    real(kind=8), dimension(3), save :: aa1, aa2, aa3, re, de, r0, gamma, c1
+    real(kind=8), dimension(3,3), save :: c2,rot
+    real(kind=8), dimension(3,3,3), save :: c3
+    real(kind=8), dimension(3,3,3,3), save :: c4
+    real(kind=8), dimension(3,3,3,3,3), save :: c5
+    real(kind=8), save :: v0
+    real(kind=8) :: eV2Har, bohr2A, A2bohr, Vmin
+
+    contains
+
+    !Calculates the potential for each time slice using the analytic HCN <-> HNC ground state system potential taken from 
+    !Murrell, Carter and Halonen, J. Mol. Spectr. 1982, Vol 93, page 307
+    !
+    !The coordinatest used are  r1 = CH distance
+    !                           r2 = CN distance
+    !                           r3 = NH distance
+    
+
+    !This is the HCN potential and hence assumes that the system is embedded in \mathbf{R}^{3} and that there are 
+    !3 atoms as such these values have been hardcoded in so that the program will segfault if the number of atoms
+    !or the dimensionality of the system is smaller than these values
+    subroutine Potential(sys,x,r,V,dV)
+        type (molsysdat), intent(in) :: sys
+        real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
+        real(kind=8), dimension(sys%nbond), intent(inout) :: r 
+        real(kind=8), intent(out) :: V          
+        real(kind=8), dimension(sys%dimen,sys%natom), intent(out) :: dV 
+        real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: dr
+        real(kind=8), dimension(sys%nbond) :: dVdr
+
+		real(kind=8), dimension(sys%dimen,sys%natom) :: x_Angs
+
+        logical, save :: first_time=.true.
+        real(kind=8) :: t1,t2
+        integer :: i,j,k,l,m   
+
+        if(first_time) then
+            call constants()
+            first_time=.false.
+        endif
+        
+        !Convert bead positions to angstrom - potential defined in terms of eV and angstrom
+        do j=1,sys%natom
+            do k=1,sys%dimen
+                x_Angs(k,j)=x(k,j)*bohr2A
+            enddo
+        enddo
+        
+        call intern(sys,x_Angs,r,dr)
+        call dvdi(sys,r,V,dVdr)
+        call dvdx(sys,dr,dVdr,dV)
+        
+    end subroutine Potential
+
+
+    subroutine intern(sys,x,r,dr)
+        type (molsysdat), intent(in) :: sys
+        real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
+        real(kind=8), dimension(sys%nbond), intent(out) :: r
+        real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: dr
+        integer :: i,j,k,l
+
+       	do i=1,sys%nbond
+        	r(i)=0.0d0
+        	do j=1,sys%dimen
+            	r(i) = r(i) + (x(j,sys%mb(i))-x(j,sys%nb(i)))**2
+        	enddo
+        	r(i) = sqrt(r(i))
+    	enddo
+
+    	dr=0.0d0
+    
+    	do j=1,sys%dimen
+        	do i=1,sys%nbond
+            	dr(j,sys%mb(i),i)=(x(j,sys%mb(i))-x(j,sys%nb(i)))/r(i)
+            	dr(j,sys%nb(i),i)=-dr(j,sys%mb(i),i)
+        	enddo
+    	enddo
+
+        return
+    end subroutine
+
+
+
+    !Calculates the potential and first derivatives with respect to bond length coordinates
+    subroutine dvdi(sys,r,V,dVdr)
+        type (molsysdat), intent(in) :: sys
+        real(kind=8), dimension(sys%nbond), intent(in) :: r 
+        real(kind=8), intent(out) :: V
+        real(kind=8), dimension(sys%nbond), intent(out) :: dVdr
+
+        integer i,j,k,m,l,n,i1,i2,i3
+
+
+        real(kind=8) :: poly, switch, zeroth, first, second ,third, exp_val
+        real(kind=8), dimension(3) :: dre, rho, s, dpdr, dswdr
+        real(kind=8), dimension(3,3) :: dsdr
+        !zero the derivatives
+        
+        do i=1,sys%nbond
+            dVdr(i)=0.0d0
+            dpdr(i)=0.0d0
+            do k=1,sys%nbond
+                dsdr(i,k)=0.0d0
+            enddo
+            dswdr(i)=0.0d0
+
+            !Calculate bond differences from their equilibrium and reference values
+            dre(i)=r(i)-re(i)
+            rho(i)=r(i)-r0(i)
+        enddo
+
+        !zero the energy
+        V=0.0d0
+        poly=0.0d0
+        switch=1.0d0
+
+        !define the rotated coordinates s
+        do i=1,sys%nbond
+            s(i)=rot(i,1)*rho(1)+rot(i,2)*rho(2)+rot(i,3)*rho(3)
+            !calculate derivatives of s wrt the bond lengths r
+            do k=1,sys%nbond
+                dsdr(i,k)=rot(i,k)
+            enddo
+        enddo
+
+
+
+        !Calculates the potential following Murrell, Carter and Halonen as a combination of 2- and
+        ! 3- body terms
+
+        !#####################################################################################!
+        !#####################################################################################!
+        !Calculate the polynomial contribution to the three-body potential:
+        !#####################################################################################!
+        !#####################################################################################!
+
+        !zeroth order term
+        poly=poly+1.0d0
+
+        !next the fifth order term
+        poly=poly+c5(2,2,2,2,2)*s(2)**5
+        !  derivatives of polynomial wrt bondlength r:
+
+        do i1=1,sys%nbond
+            dpdr(i1)=dpdr(i1) +c5(2,2,2,2,2)*dsdr(2,i1)*5.0d0*s(2)**4
+        enddo
+
+        !  now go back to the linear term:
+
+         do i=1,sys%nbond
+           poly=poly+c1(i)*s(i)
+
+            !derivative wrt bondlength r:
+           do i1=1,sys%nbond
+             dpdr(i1)=dpdr(i1)+c1(i)*dsdr(i,i1)
+           enddo
+        !  second order:
+
+           do k=i,sys%nbond
+             poly=poly+c2(i,k)*s(i)*s(k)
+
+        !  derivative wrt bondlength r:
+
+             do i1=1,sys%nbond
+               dpdr(i1)=dpdr(i1)+c2(i,k)*dsdr(i,i1)*s(k)+c2(i,k)*s(i)*dsdr(k,i1)
+             enddo
+        !  third order: 
+
+             do l=k,sys%nbond
+               poly=poly+c3(i,k,l)*s(i)*s(k)*s(l) 
+
+        !  derivative wrt bondlength r: 
+
+               do i1=1,sys%nbond
+                 dpdr(i1)= dpdr(i1) + c3(i,k,l)*dsdr(i,i1)*s(k)*s(l)  &
+                 &       + c3(i,k,l)*s(i)*dsdr(k,i1)*s(l) + c3(i,k,l)*s(i)*s(k)*dsdr(l,i1)
+                enddo
+
+        !  fourth order:
+
+             do m=l,sys%nbond
+                 poly=poly+c4(i,k,l,m)*s(i)*s(k)*s(l)*s(m)
+        !  derivative wrt bondlength r:
+
+                 do i1=1,sys%nbond
+                   dpdr(i1)=dpdr(i1) &
+     &                   +c4(i,k,l,m)*dsdr(i,i1)*s(k)*s(l)*s(m) &
+     &                   +c4(i,k,l,m)*s(i)*dsdr(k,i1)*s(l)*s(m) &
+     &                   +c4(i,k,l,m)*s(i)*s(k)*dsdr(l,i1)*s(m) &
+     &                   +c4(i,k,l,m)*s(i)*s(k)*s(l)*dsdr(m,i1)
+                 enddo
+             enddo 
+            enddo 
+           enddo 
+        enddo       
+
+        !#####################################################################################!
+        !#####################################################################################!
+
+        !  calculate switching function, ie the three body term must tend
+        !  to zero as any of the 3 bondlengths becomes large:
+
+        !  again this loop is *NOT* vectorised
+
+        !#####################################################################################!
+        !#####################################################################################!
+        !                       Switching Term                            
+        !#####################################################################################!
+        !#####################################################################################!
+
+         do i=1,sys%nbond
+           switch=switch*(1.0d0-dtanh(0.5d0*gamma(i)*rho(i)))
+         enddo
+         
+        !  now calculate the total energy, en: 
+
+         V=V+switch*v0*poly
+
+        !  derivatives of switching function wrt the bondlegths r:
+
+         do i=1,sys%nbond
+           dswdr(i)=-0.5d0*gamma(i)/(dcosh(0.5d0*gamma(i)*rho(i)))**2 &
+     &               *switch/(1.0d0-dtanh(0.5d0*gamma(i)*rho(i)))
+
+          enddo
+
+        !#####################################################################################!
+        !#####################################################################################!
+
+        do i=1,sys%nbond
+            dVdr(i)=v0*(poly*dswdr(i)+switch*dpdr(i))
+        enddo
+        
+        !#####################################################################################!
+        !#####################################################################################!
+        !Calculate the two body term
+        !#####################################################################################!
+        !#####################################################################################!
+        do i=1,sys%nbond
+            !Two body term
+            exp_val = dexp(-aa1(i)*dre(i))
+            V = V - de(i)*(1.0d0+aa1(i)*dre(i)+aa2(i)*dre(i)**2 + aa3(i)*dre(i)**3)*exp_val
+
+            !First Derivatives of two body term
+            first = 2.0d0*aa2(i)-aa1(i)**2
+            second = 3.0d0*aa3(i)-aa1(i)*aa2(i)
+            third = -aa1(i)*aa3(i)
+
+            dVdr(i) = dVdr(i)-de(i)*(first*dre(i) + second*dre(i)**2+third*dre(i)**3)*exp_val
+            
+        !#####################################################################################!
+        !#####################################################################################!
+        enddo
+
+        !Convert from eV to Hartree and set the zero point to the minimum of the potential
+        V = (V-Vmin)*eV2Har
+
+    end subroutine dvdi
+
+
+
+    !Converts to derivatives with respect to cartesian coordinates
+    subroutine dvdx(sys,dr,dVdr,dV)
+        type (molsysdat), intent(in) :: sys
+        real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: dr
+        real(kind=8), dimension(sys%nbond) :: dVdr 
+        real(kind=8), dimension(sys%dimen,sys%natom), intent(out) :: dV 
+
+        integer :: j,k
+
+        do j=1,sys%natom
+            do k=1,sys%dimen
+                dV(k,j)=0.0d0
+            enddo
+        enddo
+
+        do j=1,sys%nbond
+            do k=1,sys%dimen
+               	dV(k,sys%mb(j))=dV(k,sys%mb(j))+dVdR(j)*dr(k,sys%mb(j),j)
+                dV(k,sys%nb(j))=dV(k,sys%nb(j))+dVdR(j)*dr(k,sys%nb(j),j)
+           	enddo
+        enddo
+
+        do j=1,sys%natom
+            !convert to hartree/bohr from ev/a
+            dVdr(j)=dVdr(j)*eV2Har*bohr2A
+            
+            do k=1,sys%dimen
+                !convert to hartree/bohr from ev/a
+                dV(k,j)=dV(k,j)*eV2Har*bohr2A
+                
+            enddo
+        enddo
+        return
+
+    end subroutine dvdx
+
+    !Subroutine initialises the constants for this potential at the first potential evaluation
+    !In order to parallelise this code this subroutine would need to be the initialisation
+    !subroutine for a type that stores all of these parameters which is passed to the potential
+    subroutine constants()
+
+    integer :: i,j,k,l,m
+    !CH (quartet sigma minus)
+
+       aa1(1)=5.5297d0
+       aa2(1)=8.7166d0
+       aa3(1)=5.3082d0
+       re(1)=1.0823d0
+       de(1)=2.8521d0
+
+    !CN (doublet sigma plus)
+
+       aa1(2)=5.2448d0
+       aa2(2)=7.3416d0
+       aa3(2)=4.9785d0
+       re(2)=1.1718d0
+       de(2)=7.9282d0
+
+    !NH (triplet sigma minus)
+
+       aa1(3)=3.0704d0
+       aa2(3)=0.0000d0
+       aa3(3)=0.0000d0
+       re(3)=1.0370d0
+       de(3)=3.9938d0
+
+    !three body potential:
+
+    !set the reference potential (eV):
+
+       v0=-3.0578d0
+
+    !reference bondlengths (Angs):
+
+       r0(1)=1.9607d0
+       r0(2)=2.2794d0
+       r0(3)=1.8687d0
+
+    !switching coefficients (Angs-1):
+
+       gamma(1)=3.9742d0
+       gamma(2)=4.3688d0
+       gamma(3)=1.5176d0
+
+    !polynomial coefficients
+
+
+    !zero all the coefficients first (we will only use the "upper triangle"):
+
+       do 100 i=1,3
+         c1(i)=0.0d0
+         do 100 j=1,3
+           c2(i,j)=0.0d0
+           do 100 k=1,3
+             c3(i,j,k)=0.0d0
+             do 100 l=1,3
+               c4(i,j,k,l)=0.0d0
+               do 100 m=1,3
+                 c5(i,j,k,l,m)=0.0d0
+       100    continue
+
+    !linear terms (Angs-1):
+
+       c1(1)= 1.9076d0
+       c1(2)=-0.5008d0
+       c1(3)=-0.0149d0
+
+    !second order (Angs-2):
+ 
+       c2(1,1)= 0.6695d0
+       c2(2,2)=-1.3535d0
+       c2(3,3)=-1.0501d0
+       c2(1,2)= 0.2698d0
+       c2(1,3)=-1.1120d0
+       c2(2,3)= 1.9310d0
+
+    !third order (Angs-3):
+
+       c3(1,1,1)=-0.0877d0
+       c3(2,2,2)= 0.0044d0
+       c3(3,3,3)= 0.0700d0
+       c3(1,1,2)= 0.0898d0
+       c3(1,2,2)=-1.0186d0
+       c3(1,1,3)=-0.0911d0
+       c3(1,3,3)= 0.0017d0
+       c3(2,2,3)= 0.4567d0
+       c3(2,3,3)=-0.8840d0
+       c3(1,2,3)= 0.3333d0
+    
+    !fourth order (Angs-4):
+
+       c4(1,1,1,1)=-0.0367d0
+       c4(2,2,2,2)= 0.4821d0
+       c4(3,3,3,3)= 0.2564d0
+       c4(1,1,1,2)=-0.0017d0
+       c4(1,1,2,2)=-0.2278d0
+       c4(1,2,2,2)=-0.1287d0
+       c4(1,1,1,3)= 0.1759d0
+       c4(1,1,3,3)=-0.0399d0
+       c4(1,3,3,3)=-0.1447d0
+       c4(2,2,2,3)=-0.3147d0
+       c4(2,2,3,3)= 0.1233d0
+       c4(2,3,3,3)= 0.3161d0
+       c4(1,1,2,3)= 0.0919d0
+       c4(1,2,2,3)=-0.0954d0
+       c4(1,2,3,3)= 0.1778d0
+
+    !fifth order (Angs-5):
+
+       c5(2,2,2,2,2)=-0.1892d0
+
+    !define the rotation matrix:
+
+       rot(1,1)= 0.4436d0
+       rot(1,2)= 0.6091d0
+       rot(1,3)= 0.6575d0
+       rot(2,1)=-0.8941d0
+       rot(2,2)= 0.2498d0
+       rot(2,3)= 0.3718d0
+       rot(3,1)= 0.0622d0
+       rot(3,2)=-0.7527d0
+       rot(3,3)= 0.6554d0
+
+
+        bohr2A = 0.529177249d0
+        A2bohr = 1.889725989d0
+        eV2Har = 0.036749309d0
+        Vmin = -13.591379830778118d0
+
+       return
+
+    end subroutine constants
+    
+end module Potential_HCN

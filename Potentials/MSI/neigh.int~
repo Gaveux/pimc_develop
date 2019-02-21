@@ -1,0 +1,14 @@
+
+interface 
+  subroutine neighbour(interp,pot,RawWeight,r,neigh)
+
+  use interpolation
+
+  type (interp_params), intent(in) :: interp
+  type (pot_data_point), dimension(:), pointer :: pot
+  real(kind=8), dimension(:), intent(inout) :: RawWeight
+  real(kind=8), dimension(:), intent(in) :: r
+  type (neighbour_list), intent(out) :: neigh
+
+  end subroutine
+end interface

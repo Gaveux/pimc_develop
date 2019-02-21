@@ -1,0 +1,414 @@
+
+! main loop for path integral Monte Carlo
+#ifdef MSI
+
+subroutine pimc_monte(sys,pimc,Beads,OldBeads, pot,out_dir,binning_in)
+
+#else
+
+subroutine pimc_monte(sys,pimc,Beads,OldBeads, out_dir,binning_in)
+
+#endif
+
+    use Estimator_class
+    use molecule_specs
+    use pimc_structures
+    use mt19937
+    use actions
+    use moves
+    use binning
+    use free_energy
+
+#if POT == 0
+    use potential_msi
+#elif POT == 1
+    use potential_h2o
+#elif POT == 2
+    use potential_nh3
+#elif POT == 3
+    use potential_hcn
+#endif
+
+    implicit none
+
+    type (molsysdat), intent(in)  :: sys
+    type (pimc_par) :: pimc
+    type (pimc_particle), dimension(:), pointer :: Beads
+    type (pimc_particle), dimension(:), pointer :: OldBeads
+
+#ifdef 0
+    type(msi_params) :: pot
+#endif
+
+    character(len=80), intent(in) :: out_dir
+    character(len=80), intent(in) :: binning_in
+    
+#ifdef FREE_ENERGY
+    type (free_energy_type) :: free
+#endif
+
+    type (estimator) :: est
+    type (action_vals) :: act
+    
+    type(bin_type) :: bins
+    type(binning_params) :: params
+    
+    integer :: iacc,imoveacc, iblock, iter, blocks_done, ibead
+    real(kind=8) :: accept, acctot, moveacc, moveacctot
+    real(kind=8) deltae, rand, B_init
+    integer :: i,j,k,step,ierr, step_count, ind
+    integer :: imove,iatom,num_moves,atom_pass
+    integer :: n_bl, n_ba, n_d
+    logical :: equil = .TRUE.
+    logical :: atom_move
+    integer :: first_moved,last_moved
+    
+
+
+    if(pimc%move%move_type.eq.0) then
+        num_moves=1
+        atom_pass=1
+    else if(pimc%move%move_type.eq.1) then
+        num_moves=ceiling(dble(pimc%NumBeadsEff)/dble(pimc%MovesPerStep))+1
+        atom_pass=sys%natom
+    endif
+    
+    
+    !###################################################################
+    ! print a headline for the output 
+    !###################################################################
+    print *, '==============================================================================='
+    print *, '               - PIMC90 - the temperature effect  - '
+    print *, '==============================================================================='
+    print *, ' System Dimensionality                   ',sys%dimen
+    print *, ' Total number of beads                   ',pimc%NumBeads 
+    print *, ' Number of Effective Beads               ',pimc%NumBeadsEff
+    print *, ' Step size for initial displacement      ',pimc%IniDisp
+    print *, ' Number of blocks                        ',pimc%NumBlocks
+    print *, ' Number of blocks to equilibrium         ',pimc%BlocksToEquil
+    print *, ' Number of Monte Carlo steps per block   ',pimc%StepsPerBlock
+    print *, ' Temperature in Kelvin                   ',pimc%Temperature
+    print *, ' Probability of writing bead to TOUT     ',pimc%Sample
+    print *, ' Beta =                                  ',pimc%Beta
+    print *, ' Trial Moves =                           ',pimc%move%move_type
+    print *, ' Displacement parameter for moving beads ',pimc%move%BeadDisp
+    print *, ' Number of beads displaced per step      ',pimc%move%MovesPerStep
+    print *, ' Moves Per Monte Carlo Pass =            ',num_moves
+    print *, ' Action =                                ',pimc%act%act_type
+    print *, ' t0 =                                    ',pimc%t0
+    print *, ' a1 =                                    ',pimc%a1
+
+#ifdef FREE_ENERGY
+    print *, ' Free Energy Type =                      ',pimc%free%free_type
+#endif
+
+    if (pimc%Restart == 'y') then
+        print *, ' No Restarting Present'
+    else
+        print *, '--------------------------------------------------------------------'
+        print *, ' Starting path integral MC calculation                      '
+        print *, '--------------------------------------------------------------------'
+    endif
+    !###################################################################
+    
+
+
+    !###################################################################
+    !  main loop
+    !###################################################################
+
+
+    !initialise the estimator type
+    call new(est)
+    
+    !initialise the action type
+    call new(act)
+
+#ifdef FREE_ENERGY
+	if(pimc%doFree==1) then
+    	!initialise the free energy type
+    	call new(free,pimc%NumBeads,sys%natom,sys%dimen)
+    	if(pimc%free%free_type==2) then
+        	call openFileOut(out_dir)
+    	endif
+	endif
+#endif
+    
+    !###################################################################
+    !initialise the types for binning parameters of the system
+    !###################################################################
+    call read_number_hist(binning_in, sys%nbond, n_bl, n_ba, n_d)
+    call new(params,n_bl,n_ba,n_d)
+    call read_binning_params(params,binning_in,sys%nbond)
+    call new(bins,params)
+    !###################################################################
+    
+    !evaluate the action to start
+    call eval_action(sys,pimc,Beads,act)
+
+
+    !###################################################################
+    ! start loop over number of blocks to calculate
+    !###################################################################
+
+    acctot=0.0
+    moveacctot=0.0
+
+    do iblock=1,pimc%NumBlocks
+        accept = 0.0
+        moveacc = 0.0
+        if (iblock.eq.pimc%BlocksToEquil+1) then
+            equil=.FALSE.
+        endif
+
+        B_init = pimc%Beta
+        do iter=1,pimc%StepsPerBlock
+
+            do iatom=1,atom_pass
+                do imove=1,num_moves
+
+                    atom_move=.false.
+                    if(imove.eq.num_moves) then
+                        atom_move=.true.
+                    endif
+                   
+                    !###################################################################
+                    ! copy the current set of beads to OldBeads
+                    ! and copy the path integral action as well 
+                    !###################################################################
+                
+                    do ibead=1,pimc%NumBeadsEff+1
+                        call copy(Beads(ibead),OldBeads(ibead))
+                    enddo
+                    act%act_old = act%act
+                    
+                    !###################################################################
+
+
+
+                    !###################################################################
+                    ! move the current set of beads and calculate the energies
+                    ! for the beads displaced in this process while you're at it
+                    !###################################################################
+
+#ifdef FREE_ENERGY
+                    !scale the coordinates for thermodynamic integration between the classical and
+                    !quantum result
+                    if (pimc%free%free_type == 0 .and. pimc%doFree==1) then
+                        call scaleCoords(free,Beads,pimc,sys)
+                    endif
+#endif
+
+                    call trial_move(sys,pimc,Beads,atom_move,first_moved,last_moved)
+
+#ifdef FREE_ENERGY
+                    !If using classical to quantum scaling all the beads have to be updated
+                    if (pimc%free%free_type == 0.and. pimc%doFree==1) then
+                        first_moved=1
+                        last_moved = pimc%NumBeadsEff
+                    endif
+#endif
+                
+                    do i=first_moved,last_moved 
+                        ind = mod(i-1,pimc%NumBeadsEff)+1
+#if POT == 0
+                        !MSI potential energy surfaces
+                        call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
+#else
+                        !Analytic potential energy surfaces
+                        call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
+#endif
+                    enddo
+
+#ifdef FREE_ENERGY
+                    !Unscale the coordinates so the rest proceeds as normal
+                    if (pimc%free%free_type == 0.and. pimc%doFree==1) then
+                        call unscaleCoords(free,Beads,pimc,sys)
+                    endif
+#endif
+                
+                    call copy (Beads(1),Beads(pimc%NumBeadsEff+1))
+                    !###################################################################
+
+
+
+                    !###################################################################
+                    ! calculate the path integral action
+                    !###################################################################
+                    
+                    call eval_action(sys,pimc,Beads,act)
+
+                    !###################################################################
+
+
+
+                    !###################################################################
+                    ! now the actual Monte Carlo step!
+                    !###################################################################
+
+                    deltae = pimc%Beta*(act%act - act%act_old)
+                    rand = genrand_real3()
+
+                    if (deltae.lt.0.0) then
+                        if(atom_move) then
+                            accept = accept + 1.0
+                        else
+                            moveacc = moveacc + 1.0 
+                        endif
+                    else if ((deltae.gt.0.0).and.(exp(-deltae).lt.rand)) then
+                        do ibead=1,pimc%NumBeadsEff+1
+                            call copy(OldBeads(ibead),Beads(ibead))
+                        enddo
+                        act%act = act%act_old
+
+                    else
+                        if(atom_move) then
+                            accept = accept + 1.0
+                        else
+                            moveacc = moveacc + 1.0 
+                        endif
+                    endif
+
+                    !###################################################################
+
+
+
+                    if(equil) then
+
+                    else
+                        !###################################################################
+                        ! do some calculating of energy estimators and binning
+                        !###################################################################
+#ifdef FREE_ENERGY
+                        if(pimc%doSample) then
+#endif
+                        do i=1,pimc%NumBeads
+                            if(pimc%NumBeads*3==pimc%NumBeadsEff) then
+                                call updateBinning(bins,params,Beads(3*(i-1)+1)%x,Beads(i)%r)
+                                call computeDihedral(Beads(3*(i-1)+1)%x(:,1),Beads(3*(i-1)+1)%x(:,2),&
+                                &                    Beads(3*(i-1)+1)%x(:,3),Beads(3*(i-1)+1)%x(:,4))
+                            else
+                                call updateBinning(bins,params,Beads(i)%x,Beads(i)%r)
+                                call computeDihedral(Beads(i)%x(:,1),Beads(i)%x(:,2),Beads(i)%x(:,3),Beads(i)%x(:,4))
+                            endif
+                        enddo
+                        call update(sys,pimc,Beads,est)
+#ifdef FREE_ENERGY
+                        endif
+#endif
+                        !###################################################################
+#ifdef FREE_ENERGY
+                        !do some calculation of free energy estimators
+                        if(pimc%free%free_type==2.and. pimc%doFree==1) then
+                            call reversibleScaling(free,Beads,pimc,sys)
+                        endif
+#endif
+                    endif
+                enddo
+            enddo
+            
+#ifdef FREE_ENERGY
+            if(equil) then
+
+            else
+                !If reversible scaling update the temperature at the end of each step
+                if(pimc%free%free_type==2.and. pimc%doFree==1) then
+                    call tempStep(pimc)
+                endif
+            endif
+#endif      
+        enddo
+
+        !###################################################################
+        !Process the results at the end of the block
+        !###################################################################
+        accept = accept / (pimc%StepsPerBlock*atom_pass)
+        acctot = acctot + accept
+    
+        if(pimc%move%move_type.eq.1) then
+            moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
+            moveacctot = moveacctot + moveacc
+        endif
+    
+        write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
+
+        if(pimc%move%move_type.eq.1) then
+            write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
+        endif
+
+        if(pimc%Sample==1) then
+            !at the end of each block write some geometries to tout
+            do i=1,pimc%NumBeadsEff
+                call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
+            enddo
+        endif
+
+        if(equil) then
+
+        else
+            !###################################################################
+            ! calculate average energy and acceptance probability for
+            ! each block and write them out
+            !###################################################################
+
+
+#ifdef FREE_ENERGY
+			if(pimc%free%free_type==2.and. pimc%doFree==1) then
+            	call writeIntInternal(free,pimc%StepsPerBlock,B_init,pimc%beta_step)
+			endif
+            if(pimc%doSample) then
+#endif
+
+            call update_block(pimc,est)
+            write(*,*) ''
+
+#ifdef FREE_ENERGY
+            endif
+#endif
+            !###################################################################
+        endif
+        !###################################################################
+
+    enddo
+#ifdef FREE_ENERGY
+    if(pimc%doSample) then
+#endif
+
+    call writeHistogram(bins,params,out_dir) 
+
+
+#ifdef FREE_ENERGY
+    endif
+#endif
+
+
+    !close tout
+    if(pimc%Sample==1) then
+        call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
+    endif
+
+
+    !###################################################################
+    ! calculate total average energy and acceptance probability
+    !###################################################################
+    acctot=acctot/dble(pimc%NumBlocks)
+    moveacctot=moveacctot/dble(pimc%NumBlocks)
+
+#ifdef FREE_ENERGY
+    if(pimc%doSample) then
+#endif
+
+    call end_sim(pimc,est)
+
+#ifdef FREE_ENERGY
+    endif
+    if(pimc%free%free_type==2.and. pimc%doFree==1) then
+        call closeFileOut()
+    endif
+#endif
+
+    !###################################################################
+    return
+end subroutine
+
+

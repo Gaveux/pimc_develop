@@ -1,0 +1,20 @@
+
+interface
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR) 
+
+  use molecule_specs
+  use interpolation
+
+  type (molsysdat), intent(in) :: sys
+  type (interp_params), intent(in) :: interp
+  type (pot_data_point), dimension(:), pointer :: pot
+  type (neighbour_list), intent(in) :: neigh
+
+  real(kind=8), dimension(:), intent(inout) :: Weight
+  real(kind=8), dimension(:), intent(in) :: r
+  real(kind=8), intent(out) :: V
+  real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
+
+  end subroutine calcen
+end interface
+
