@@ -7,7 +7,7 @@ module vars_class
     type vars
         real(kind=8) :: mean_block, var_block, mean_tot, var_tot, curr
         real(kind=8) :: delta, diffsqr
-        integer(kind=4) :: n_block, n_tot
+        integer(kind=4) :: n_block, n_tot, n_block_save
 
     end type vars
 
@@ -125,9 +125,10 @@ module vars_class
         subroutine print_var_block(this)
             type (vars), intent(inout) :: this
             if(this%n_block.ne.0) then
-            write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
-            !&           'Block Size: ', this%n_block
+            write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block), &
+            &           'Block Size: ', this%n_block
             endif
+            this%n_block_save = this%n_block
             this%n_block=0
             this%var_block=0.0
             this%mean_block=0.0
@@ -140,8 +141,9 @@ module vars_class
         subroutine print_var_end(this)
             type (vars), intent(in) :: this
             if(this%n_tot.ne.0) then
-            !write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
-            !&           'Averages: ', this%n_tot
+            print *, "n_block_save = ", this%n_block_save
+            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
+            &           'Averages: ', this%n_tot
             endif
         end subroutine print_var_end
 
