@@ -355,6 +355,7 @@ module path_integral_monte_carlo
                 ! writing checkpoint for blocking algorithm and energy estimator
                 open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
                 write(599,*) est
+                write(599,*) 'block number: ', iblock
                 close(unit=599)
 
 #ifdef FREE_ENERGY
