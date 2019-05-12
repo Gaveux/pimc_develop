@@ -41,7 +41,6 @@ module pimc_structures
         integer :: NumBeads, NumBeadsEff
         integer :: NumBlocks, BlocksToEquil, StepsPerBlock
         integer :: Sample
-        integer :: RestartSeed
         character(len=80) :: start, resume
 
         !stores the action parameters
@@ -59,7 +58,8 @@ module pimc_structures
         real(kind=8) :: Beta
         real(kind=8) :: invBeta !1/beta = kb*T
         real(kind=8) :: invNumBeads !1/P
-        character(len=1) :: Restart
+        character(len=1) :: Restart 
+        character(len=1) :: blocking  
 
     end type pimc_par
     !-----------------------

@@ -1,3 +1,13 @@
+!------------------------------------------------------------------
+! calculating blocking algorithm
+!------------------------------------------------------------------
+module blocking
+     
+    
+    
+    implicit none
+
+    
 
 subroutine blocking(blockdata)
 !J. Chem. Phys. 91, 461 (1989); http://dx.doi.org/10.1063/1.457480
@@ -91,3 +101,5 @@ subroutine blocking(blockdata)
 return
 
 end subroutine
+
+end module blocking

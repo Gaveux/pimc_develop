@@ -56,10 +56,14 @@ module vars_class
             type (vars), intent(inout) :: this
             real(kind=8) :: val
             this%curr=val
+            !print *, 'this%curr = ', val
             this%n_block=this%n_block+1
+!            print *, 'curr', this%curr, 'mean_block', this%mean_block
             this%delta=this%curr-this%mean_block
             this%mean_block=this%mean_block+this%delta/dble(this%n_block)
             this%diffsqr=this%diffsqr+this%delta*(this%curr-this%mean_block)
+
+            !print *, 'n_block = ', this%n_block
 
             return
         end subroutine update_step_var
@@ -75,10 +79,18 @@ module vars_class
 
         subroutine update_block_var(this)
             type (vars), intent(inout) :: this
+            !print *, 'this%n_block = ', this%n_block
             !If there was more than one step in the block
             if(this%n_block.gt.1) then
                 !Calculate the block variance given it is well defined
                 this%var_block=this%diffsqr/dble(this%n_block-1)
+               ! print *, 'diffsqr = ', this%diffsqr
+               ! print *, 'this%n_block =', this%n_block
+               ! print *, 'this%var_block = ', this%var_block
+               ! print *, 'this%n_tot = ', this%n_tot
+               ! print *, 'mean_block = ', this%mean_block
+               ! print *, 'mean_tot = ', this%mean_tot
+               ! print *, 'var_tot = ', this%var_tot
  
                 !If we have previously had a block of length greater than one
                 if(this%n_tot.gt.1) then
@@ -87,7 +99,7 @@ module vars_class
                     this%var_tot=(dble(this%n_block-1)*this%var_block+dble(this%n_tot-1)*this%var_tot&
                     &           +((this%mean_block-this%mean_tot)**2)*dble(this%n_block*this%n_tot)&
                     &           /dble(this%n_block+this%n_tot))/(dble(this%n_block+this%n_tot-1))
-
+               !     print *, 'calculated via n_tot > 1'
                     !Calculate the weighted average of the means
                     this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
                     &               /dble(this%n_block+this%n_tot)
@@ -95,11 +107,13 @@ module vars_class
                 else
                     !Set the total variance to the block variance
                     this%var_tot=this%var_block
+                !    print *, 'calculated via else'
                     
                     !Update the mean for the total simulation
                     this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
                     &               /dble(this%n_block+this%n_tot)
                  endif
+                 !   print *, 'this%var_tot = ', this%var_tot
             endif
             !If we have only one step in the block then the variance of the block is not well defined
             if(this%n_block.eq.1) then
@@ -128,6 +142,7 @@ module vars_class
             write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
             !&           'Block Size: ', this%n_block
             endif
+            !print *, 'this%var_block = ', this%var_block, 'hahaha'
             this%n_block=0
             this%var_block=0.0
             this%mean_block=0.0
@@ -140,8 +155,8 @@ module vars_class
         subroutine print_var_end(this)
             type (vars), intent(in) :: this
             if(this%n_tot.ne.0) then
-            !write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
-            !&           'Averages: ', this%n_tot
+            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
+            &           'Averages: ', this%n_tot
             endif
         end subroutine print_var_end
 
