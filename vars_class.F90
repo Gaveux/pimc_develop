@@ -1,6 +1,7 @@
 !A module holding all variables and containing all functions required for computing the average and
 !variance of a quantity using the online variance algotirhm
 module vars_class
+    use pimc_structures
     implicit none
 
     !Stores the variables required for averaging a quantity over a simulation run
@@ -136,13 +137,20 @@ module vars_class
 
 
 
-        subroutine print_var_block(this)
+        subroutine print_var_block(pimc,this)
             type (vars), intent(inout) :: this
-            if(this%n_block.ne.0) then
-            write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
-            !&           'Block Size: ', this%n_block
-            endif
-            !print *, 'this%var_block = ', this%var_block, 'hahaha'
+            type (pimc_par), intent(in) :: pimc  
+               
+              if(this%n_block.ne.0) then
+                if (pimc%blocking == 'n') then
+                   write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
+                   !&           'Block Size: ', this%n_block
+                else
+                   open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
+                   write(199,*) this%mean_block
+                   close(unit=199)
+                endif
+              endif
             this%n_block=0
             this%var_block=0.0
             this%mean_block=0.0

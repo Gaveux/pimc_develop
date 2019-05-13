@@ -41,7 +41,7 @@ module pimc_structures
         integer :: NumBeads, NumBeadsEff
         integer :: NumBlocks, BlocksToEquil, StepsPerBlock
         integer :: Sample
-        character(len=80) :: start, resume
+        character(len=80) :: start, resume, blk
 
         !stores the action parameters
         type (act_par) :: act

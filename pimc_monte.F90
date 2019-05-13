@@ -330,10 +330,10 @@ module path_integral_monte_carlo
                 moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
                 moveacctot = moveacctot + moveacc
             endif
-            write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
+            !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
          
             if(pimc%move%move_type.eq.1) then
-                write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
+               ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
             endif
 
             if(pimc%Sample==1) then
@@ -353,7 +353,7 @@ module path_integral_monte_carlo
                 endif
                 if(pimc%doSample==1) then
 #endif
-                call update_block(est)
+                call update_block(pimc,est)
             
                 ! writing checkpoint for energy estimator and errors
                 open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
@@ -366,7 +366,7 @@ module path_integral_monte_carlo
 #endif
             endif
             
-            write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
+            !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
 #ifdef FREE_ENERGY
         if(pimc%doSample==1) then
