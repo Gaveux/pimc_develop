@@ -86,8 +86,8 @@ module Estimator_class
                 else if (pimc%act%act_type.eq.1) then
                     call energy_thermo_ta(sys,pimc,Beads,results)
                     call update(this%vars(1),results(1))
-                    call update(this%vars(4),results(2))
-                    call update(this%vars(7),results(3))
+                    !call update(this%vars(4),results(2))
+                    !call update(this%vars(7),results(3))
 
                 !Else if we are using the chin action use the chin action estimators
                 else if (pimc%act%act_type.eq.2) then
@@ -117,13 +117,13 @@ module Estimator_class
 
             do i=1,9
                 if(i.eq.1) then
-                    write(*,*) 'Energy'
+                    !write(*,*) 'Energy'
                 
                 else if(i.eq.4) then
-                    write(*,*) 'Kinetic Energy'
+                    !write(*,*) 'Kinetic Energy'
                 
                 else if (i.eq.7) then
-                    write(*,*) 'Potential Energy'
+                    !write(*,*) 'Potential Energy'
                 endif
                 
                 call update_block(this%vars(i))
