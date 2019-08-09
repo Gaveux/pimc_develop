@@ -140,10 +140,10 @@ module Estimator_class
                     write(*,*) 'Total Average Energy'
                 
                 else if(i.eq.4) then
-                    write(*,*) 'Kinetic Energy'
+                    !write(*,*) 'Kinetic Energy'
                 
                 else if (i.eq.7) then
-                    write(*,*) 'Potential Energy'
+                    !write(*,*) 'Potential Energy'
 
                 endif
                 call print_end(this%vars(i))

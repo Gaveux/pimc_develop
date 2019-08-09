@@ -62,19 +62,21 @@ module vars_class
             ! of being exact
 
             this%curr=val
-            this%n_block=this%n_block+1
-            this%mean_block=((this%mean_block*dble(this%n_block-1))+this%curr)/dble(this%n_block)
+            !this%n_block=this%n_block+1
+            ! use recursive calculation to calculate mean
+            !this%mean_block=((this%mean_block*dble(this%n_block-1))+this%curr)/dble(this%n_block)
             !print *, this%mean_block, this%curr
-            this%delta=this%curr-this%mean_block
+            !this%delta=this%curr-this%mean_block
             !print *,this%delta
-            this%diffsqr=this%diffsqr+this%delta*this%delta
+            !this%diffsqr=this%diffsqr+this%delta*this%delta
             !print *,this%diffsqr
            
             !=====original code===================
-            !this%n_block=this%n_block+1
-            !this%delta=this%curr-this%mean_block
-            !this%mean_block=this%mean_block+this%delta/dble(this%n_block)
-            !this%diffsqr=this%diffsqr+this%delta*(this%curr-this%mean_block)
+            this%n_block=this%n_block+1
+            ! this is cumulative mean average
+            this%delta=this%curr-this%mean_block
+            this%mean_block=this%mean_block+this%delta/dble(this%n_block)
+            this%diffsqr=this%diffsqr+(this%curr-this%mean_block)*(this%curr-this%mean_block)
             !==================================
 
             return
@@ -91,45 +93,52 @@ module vars_class
 
         subroutine update_block_var(this)
             type (vars), intent(inout) :: this
-            this%var_block=this%diffsqr/dble(this%n_block-1)
+            !this%var_block=this%diffsqr/dble(this%n_block-1)
 
             !print *,'n_tot', this%n_tot
-            this%n_tot = this%n_tot + 1
+            !this%n_tot = this%n_tot + 1
             !print *, 'n_tot = ', this%n_tot
-            this%mean_tot=((this%mean_tot*dble(this%n_tot-1))+this%mean_block)/dble(this%n_tot)
-            this%var_tot= this%var_tot+(this%mean_block-this%mean_tot)*(this%mean_block-this%mean_tot)
+            !this%mean_tot=((this%mean_tot*dble(this%n_tot-1))+this%mean_block)/dble(this%n_tot)
+            !this%var_tot= this%var_tot+(this%mean_block-this%mean_tot)*(this%mean_block-this%mean_tot)
             !If there was more than one step in the block
             !if(this%n_block.gt.1) then
-                !Calculate the block variance given it is well defined
+                !Calculate the sample standard deviation for the block
                 !print *, this%n_block, this%diffsqr
-            !    this%var_block=this%diffsqr/dble(this%n_block-1)
+                this%var_block=this%diffsqr/dble(this%n_block-1)
+
+
+                ! using the definition of the pooled variance
+                this%var_tot = this%var_tot + this%diffsqr
+                !print *, 'var_tot = ', this%var_tot, 'diffsqr = ', this%diffsqr
                 !print *, 'this%n_tot', this%n_tot
  
                 !If we have previously had a block of length greater than one
-            !    if(this%n_tot.gt.1) then
+                !if(this%n_tot.gt.1) then
                     
                     !Calculate the average of the means
             !         print *, 'mean_block', this%mean_block
                      
                     !======= original code=================
                     !Calculate the combined variance of the two data sets
-            !        this%var_tot=(dble(this%n_block-1)*this%var_block+dble(this%n_tot-1)*this%var_tot&
-            !        &           +((this%mean_block-this%mean_tot)**2)*dble(this%n_block*this%n_tot)&
-            !        &           /dble(this%n_block+this%n_tot))/(dble(this%n_block+this%n_tot-1))
-
+                !    print *, 'this%n_block = ', this%n_block, 'this%n_tot = ', this%n_tot 
+                !    this%var_tot=(dble(this%n_block-1)*this%var_block+dble(this%n_tot-1)*this%var_tot&
+                !    &           +((this%mean_block-this%mean_tot)**2)*dble(this%n_block*this%n_tot)&
+                !    &           /dble(this%n_block+this%n_tot))/(dble(this%n_block+this%n_tot-1))
+                !    print *, this%var_tot
                     !Calculate the weighted average of the means
-            !        this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
-            !        &               /dble(this%n_block+this%n_tot)
+                    this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
+                    &               /dble(this%n_block+this%n_tot)
+                    !print *, 'mean_tot = ', this%mean_tot
                     !======================================
 
-            !    else
+                !else
                     !Set the total variance to the block variance
-            !        this%var_tot=this%var_block
+                !    this%var_tot=this%var_block
                     
                     !Update the mean for the total simulation
-            !        this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
-            !        &               /dble(this%n_block+this%n_tot)
-            !     endif
+                !    this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
+                !    &               /dble(this%n_block+this%n_tot)
+                ! endif
             !endif
             !If we have only one step in the block then the variance of the block is not well defined
             !if(this%n_block.eq.1) then
@@ -146,7 +155,7 @@ module vars_class
 
             !endif   
             !Update the total number of times that this has been called
-            !this%n_tot=this%n_tot+this%n_block
+            this%n_tot=this%n_tot+this%n_block
             !print *, 'end', this%n_tot
         end subroutine update_block_var
 
@@ -157,8 +166,8 @@ module vars_class
             type (vars), intent(inout) :: this
             if(this%n_block.ne.0) then
             ! returns the mean of block and its standard deviation of the mean
-            write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block), &
-            &           'Block Size: ', this%n_block
+            !write(*,*) this%mean_block, '+/-', sqrt(this%var_block/(this%n_block*this%n_block)), &
+            !&           'Block Size: ', this%n_block
             !print *, this%var_block
             endif
             this%n_block_save = this%n_block
@@ -174,11 +183,14 @@ module vars_class
         subroutine print_var_end(this)
             type (vars), intent(in) :: this
             if(this%n_tot.ne.0) then
-            !print *, "n_block_save = ", this%n_block_save
-            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/(this%n_tot*this%n_tot)), &
-            &           'Averages: ', this%n_tot
+            !print *, "n_block_save = ", this%n_block_save, 'MC steps = ', this%n_tot/this%n_block_save
+            ! this calculates the mean of MC-block and its population standard deviation of the mean
+            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/(dble(this%n_tot-(this%n_tot/this%n_block_save))*dble(this%n_tot)))
+            !&           'Average+)
+            !print *, 'MC block = ', this%n_tot/this%n_block_save
+            !print *, this%n_tot - (this%n_tot/this%n_block_save)
+            !print *, dble(this%n_tot)*dble(this%n_tot-(this%n_tot/this%n_block_save))
             endif
         end subroutine print_var_end
-
 
 end module vars_class
