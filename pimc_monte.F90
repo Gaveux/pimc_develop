@@ -188,7 +188,7 @@ module path_integral_monte_carlo
             endif
 
             B_init = pimc%Beta
-            do iter=1,pimc%StepsPerBlock
+            !do iter=1,pimc%StepsPerBlock
            
                 do iatom=1,atom_pass
                     do imove=1,num_moves
@@ -305,7 +305,8 @@ module path_integral_monte_carlo
                     endif
                 endif
 #endif      
-            enddo
+            ! end do for iter looping
+            !enddo
 
             !End of the step
             

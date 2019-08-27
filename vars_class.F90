@@ -78,7 +78,7 @@ module vars_class
             this%mean_block=this%mean_block+this%delta/dble(this%n_block)
             this%diffsqr=this%diffsqr+(this%curr-this%mean_block)*(this%curr-this%mean_block)
             !==================================
-
+            !print *, 'n_block = ', this%n_block
             return
         end subroutine update_step_var
 
