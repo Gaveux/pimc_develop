@@ -154,6 +154,7 @@ module vars_class
             this%var_block=0.0
             this%mean_block=0.0
             this%diffsqr=0.0
+            !print *, 'this%n_block = ', this%n_block_save, 'n_tot = ', this%n_tot
         end subroutine print_var_block
 
 
@@ -164,7 +165,8 @@ module vars_class
             if(this%n_tot.ne.0) then
             !print *, "n_block_save = ", this%n_block_save, 'MC steps = ', this%n_tot/this%n_block_save
             ! this calculates the mean of MC-block and its population standard deviation of the mean
-            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/dble(this%n_tot)), 'averages: ', this%n_tot 
+            !print *, "N = ", this%n_tot
+            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/dble(this%n_tot)), 'averages: ', this%n_tot
             !&           'Average+)
             !print *, 'MC block = ', this%n_tot/this%n_block_save
             !print *, this%n_tot - (this%n_tot/this%n_block_save)
