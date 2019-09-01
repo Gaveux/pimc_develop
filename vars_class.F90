@@ -166,8 +166,8 @@ module vars_class
             type (vars), intent(inout) :: this
             if(this%n_block.ne.0) then
             ! returns the mean of block and its standard deviation of the mean
-            !write(*,*) this%mean_block, '+/-', sqrt(this%var_block/(this%n_block*this%n_block)), &
-            !&           'Block Size: ', this%n_block
+            write(*,*) this%mean_block, '+/-', sqrt(this%var_block/(this%n_block*this%n_block)), &
+            &           'Block Size: ', this%n_block
             !print *, this%var_block
             endif
             this%n_block_save = this%n_block

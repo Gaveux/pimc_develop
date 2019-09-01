@@ -321,11 +321,15 @@ module path_integral_monte_carlo
            
 
             !Process the results at the end of the block
-            accept = accept / (pimc%StepsPerBlock*atom_pass)
+            ! remove stepsperblock
+            accept = accept / atom_pass
+            !accept = accept / (pimc%StepsPerBlock*atom_pass)
             acctot = acctot + accept
      
             if(pimc%move%move_type.eq.1) then
-                moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
+                !remove stepsperblock
+                moveacc = moveacc / ((num_moves-1)*sys%natom)
+                !moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
                 moveacctot = moveacctot + moveacc
             endif
             !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
