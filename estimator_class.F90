@@ -116,19 +116,19 @@ module Estimator_class
             integer :: i
 
             do i=1,9
-                if(i.eq.1) then
-                    write(*,*) 'Energy'
+                !if(i.eq.1) then
+                !    write(*,*) 'Energy'
                 
-                else if(i.eq.4) then
-                    write(*,*) 'Kinetic Energy'
+                !else if(i.eq.4) then
+                !    write(*,*) 'Kinetic Energy'
                 
-                else if (i.eq.7) then
-                    write(*,*) 'Potential Energy'
-                endif
+                !else if (i.eq.7) then
+                !    write(*,*) 'Potential Energy'
+                !endif
                 
                 call update_block(this%vars(i))
-                call print_block(this%vars(i))
             enddo
+            call print_block(this%vars(1))
 
         end subroutine estimator_block
 
