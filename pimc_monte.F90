@@ -339,8 +339,15 @@ module path_integral_monte_carlo
                     call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
                 enddo
             endif
-
+            
+            pimc%NumBlocksLeft = pimc%NumBlocks - iblock
+            pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
+ 
             if(equil) then
+                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
+                write(599,*) 'block number: ', iblock
+                write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft 
+                close(unit=599)
 
             else
 #ifdef FREE_ENERGY
@@ -356,6 +363,7 @@ module path_integral_monte_carlo
                 open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
                 write(599,*) est
                 write(599,*) 'block number: ', iblock
+                write(599,*) pimc%NumBlocksLeft, '0'   
                 close(unit=599)
 
 #ifdef FREE_ENERGY
