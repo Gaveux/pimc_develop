@@ -135,9 +135,9 @@ module Estimator_class
         subroutine estimator_end(this)
             type (estimator), intent(inout) :: this
             integer :: i
-            !do i=1,9
-            !    if(i.eq.1) then
-            !        write(*,*) 'Total Average Energy'
+            do i=1,9
+                if(i.eq.1) then
+                    write(*,*) 'Total Average Energy'
                 
             !    else if(i.eq.4) then
             !        write(*,*) 'Kinetic Energy'
@@ -145,9 +145,9 @@ module Estimator_class
             !    else if (i.eq.7) then
             !        write(*,*) 'Potential Energy'
 
-            !    endif
-            !    call print_end(this%vars(i))
-            !enddo
+                endif
+                call print_end(this%vars(1))
+            enddo
              
             !write(*,*) 'Total average energy:', this%vars(1)%mean_tot
         end subroutine estimator_end
