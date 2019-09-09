@@ -140,7 +140,7 @@ module vars_class
         subroutine print_var_end(this)
             type (vars), intent(in) :: this
             if(this%n_tot.ne.0) then
-            !write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
+            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
             !&           'Averages: ', this%n_tot
             endif
         end subroutine print_var_end
