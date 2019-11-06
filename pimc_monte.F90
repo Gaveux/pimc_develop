@@ -389,6 +389,9 @@ module path_integral_monte_carlo
         call end_sim(est)
 #ifdef FREE_ENERGY
         endif
+        if(pimc%blocking=='y') then
+          call blk_count(b_filename)
+        endif
 
         if(pimc%free%free_type==2.and. pimc%doFree==1) then
             call closeFileOut()

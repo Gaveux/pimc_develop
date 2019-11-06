@@ -147,7 +147,7 @@ module vars_class
                    !&           'Block Size: ', this%n_block
                 else
                    ! Do not make a dynamical array for this, because you cannot
-                   ! resume
+                   ! checkpoint easily
                    open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
                    write(199,*) this%mean_block
                    close(unit=199)
