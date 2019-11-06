@@ -1,23 +1,36 @@
 !------------------------------------------------------------------
 ! calculating blocking algorithm
 !------------------------------------------------------------------
-module blocking
-     
-    
-    
-    implicit none
 
-    
-
-subroutine blocking(blockdata)
+subroutine blocking(blockdata,b_file)
 !J. Chem. Phys. 91, 461 (1989); http://dx.doi.org/10.1063/1.457480
 
-  real(kind=8), dimension(:) :: blockdata
+  real(kind=8), dimension(:), allocatable :: blockdata
   real(kind=8) :: c0, xbar, sigma, sigma2, c0divn, sigmadev, sigma2dev
-  integer i,j, ndata, nblock
+  integer i,j, ndata, nblock, rows
+  character(len=80), intent(in) :: b_file
 
 ! note that number of data must be even !
+! read and store all data into blockdata
+  open (unit=13, file='b_file',status='old', action='read') 
+  rows=0 !Count the number of lines in the file
+  do 
+   read(1,*,iostat=io)
+   if (io/=0) exit
+   rows=rows+1
+  enddo
+  
+  rewind(13)
+  
+  print *, 'number of rows = ', rows
 
+  allocate(blockdata(rows))
+  
+  do i=1,rows,1
+    read(1,*) blockdata(i)
+  enddo
+  close(13)
+  !print *, blockdata
 !-----------------------------------------
 ! do stats for untransformed data first
 !-----------------------------------------
@@ -101,5 +114,3 @@ subroutine blocking(blockdata)
 return
 
 end subroutine
-
-end module blocking
