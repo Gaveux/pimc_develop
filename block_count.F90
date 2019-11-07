@@ -2,10 +2,15 @@
 !  Countint data size and parse data into blocking transformation
 !-------------------------------------------------------------------------
 
-  module block_count
+  module blocking
       use pimc_structures
       implicit none
       
+      
+      !type blocking_related
+      !     type(block_data) :: blockdata
+      !end type blocking_related
+        
       contains
 
       subroutine blk_count(blk)
@@ -13,6 +18,8 @@
           real(kind=8), dimension(:), allocatable :: blockdata
           integer i, rows, io
           character(len=80), intent(in) :: blk
+          
+          include 'blocking_transformation.int'
           
 
           ! read and store all data into blockdata
@@ -39,8 +46,8 @@
           !print *, 'size of blockdata = ', size(blockdata) 
 
           ! do blocking transformation 
-          !call blocking(blockdata)
+          call blocking_transformation(blockdata)
       end subroutine blk_count
 
 
-  end module block_count
+  end module blocking

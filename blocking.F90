@@ -3,10 +3,9 @@
 !------------------------------------------------------------------
 
 
-subroutine blocking(blockdata)
+subroutine blocking_transformation(blockdata)
 !J. Chem. Phys. 91, 461 (1989); http://dx.doi.org/10.1063/1.457480
-
-  real(kind=8), dimension(:) :: blockdata
+  real(kind=8), intent(inout), dimension(:) :: blockdata
   real(kind=8) :: c0, xbar, sigma, sigma2, c0divn, sigmadev, sigma2dev
   integer i,j, ndata, nblock
 

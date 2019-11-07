@@ -8,7 +8,7 @@ module path_integral_monte_carlo
     use binning
     use prng
     use seed
-    use block_count
+    use blocking
 
 #ifdef FREE_ENERGY
     use free_energy
