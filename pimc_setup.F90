@@ -75,7 +75,7 @@ subroutine pimc_setup(seedval,sys,pimc,Beads,OldBeads)
         ! flag the error if the file does not already exist
         print *,'reading checkpoint file: ', adjustl(trim(pimc%resume))
         open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
-        ! read in the latest beads configuration in 3D Cartesian coordinate
+        ! read in the latest beads configuration in 3D
         read(599,*) 
         do i=1,pimc%NumBeadsEff
            do j=1,sys%natom

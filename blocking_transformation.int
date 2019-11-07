@@ -1,0 +1,6 @@
+
+interface
+    subroutine blocking_transformation(blockdata)
+      real(kind=8), intent(inout), dimension(:) :: blockdata
+    end subroutine blocking_transformation
+end interface

@@ -1,10 +1,5 @@
 
 subroutine read_pimc(sys,pimc,in_file)
-    !Description:
-    !!@ details
-    !> Subroutine read_pimc reads initialises the pimc_par object from a
-    !> specified input file
-    !
     ! Example input file: pimc.in
     !
     ! #Specify the core simulation parameters
@@ -14,6 +9,8 @@ subroutine read_pimc(sys,pimc,in_file)
     ! 300
     ! Number of blocks, Blocks to equilibrium, steps per block
     ! 500,10,50000
+    ! Run Flyvbjerg blocking algorithm (y/n)
+    ! n
     ! Write out geometries at the end of each block (0=no, 1=yes)
     ! 0
     ! Do we use a restart file
@@ -81,7 +78,7 @@ subroutine read_pimc(sys,pimc,in_file)
     ! read comment; a header for the IN_PIMC file
 
     read(7,80) icomm
-    write (11,80) icomm
+    !write (11,80) icomm
 80  format(a80)
 
     !##########################################################################
@@ -104,6 +101,13 @@ subroutine read_pimc(sys,pimc,in_file)
     write(11,80) icomm
     read(7,*) pimc%NumBlocks, pimc%BlocksToEquil, pimc%StepsPerBlock
     write(11,*) pimc%NumBlocks, pimc%BlocksToEquil, pimc%StepsPerBlock
+
+    ! run Flyvbjerg blocking algorithm (y/n)
+    read(7,80)icomm
+    write(11,80)icomm
+    read(7,12) pimc%blocking
+    write(11,12) pimc%blocking
+12  format(a1)
 
     !  read in the probability of writing a walker to TOUT
     read(7,80)icomm
