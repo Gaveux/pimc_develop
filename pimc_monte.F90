@@ -8,6 +8,7 @@ module path_integral_monte_carlo
     use binning
     use prng
     use seed
+    use block_count
 
 #ifdef FREE_ENERGY
     use free_energy
@@ -72,7 +73,7 @@ module path_integral_monte_carlo
 #endif
         if (pimc%blocking == 'y') then
            print *,  '--------------------------------------------------------------------'
-           print *,  '               Convergence test using Flyvbjerg blocking algorithm  '
+           print *,  '              Convergence test using Flyvbjerg blocking algorithm  '
         elseif (pimc%blocking== 'n') then
            print *,  '--------------------------------------------------------------------' 
         endif
@@ -379,7 +380,10 @@ module path_integral_monte_carlo
         if(pimc%Sample==1) then
             call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
         endif
-
+        
+        if(pimc%blocking=='y') then
+          call blk_count(pimc%blk)
+        endif
         ! calculate total average energy and acceptance probability
         acctot=acctot/dble(pimc%NumBlocks)
         moveacctot=moveacctot/dble(pimc%NumBlocks)
@@ -388,9 +392,6 @@ module path_integral_monte_carlo
 #endif
         call end_sim(est)
 #ifdef FREE_ENERGY
-        endif
-        if(pimc%blocking=='y') then
-          call blk_count(b_filename)
         endif
 
         if(pimc%free%free_type==2.and. pimc%doFree==1) then

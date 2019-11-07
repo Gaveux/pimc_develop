@@ -146,9 +146,9 @@ module vars_class
                    write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
                    !&           'Block Size: ', this%n_block
                 else
+                   open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
                    ! Do not make a dynamical array for this, because you cannot
                    ! checkpoint easily
-                   open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
                    write(199,*) this%mean_block
                    close(unit=199)
                 endif

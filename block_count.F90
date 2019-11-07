@@ -8,38 +8,38 @@
       
       contains
 
-      subroutine blk_count(b_filename)
-          type(pimc_par), intent(in) :: pimc
+      subroutine blk_count(blk)
+          !type(pimc_par), intent(in) :: pimc
           real(kind=8), dimension(:), allocatable :: blockdata
-          integer i
-          character(len=80), intent(in) :: b_filename
+          integer i, rows, io
+          character(len=80), intent(in) :: blk
           
 
           ! read and store all data into blockdata
-          open (unit=13, file='b_file',status='old', action='read')
+          open (unit=13, file=trim(blk),status='old', action='read')
           rows=0 !Count the number of lines in the file
           
           do
-            read(1,*,iostat=io)
+            read(13,*,iostat=io)
             if (io/=0) exit
                rows=rows+1
           enddo
 
           rewind(13)
 
-          print *, 'number of rows = ', rows
+          !print *, 'number of rows = ', rows
 
           allocate(blockdata(rows))
 
-          do i=1,rows,1
-            read(1,*) blockdata(i)
+          do i=1,rows
+            read(13,*) blockdata(i)
           enddo
           close(13)
           !print *, blockdata
-          
+          !print *, 'size of blockdata = ', size(blockdata) 
 
           ! do blocking transformation 
-          call blocking(blockdata)
+          !call blocking(blockdata)
       end subroutine blk_count
 
 

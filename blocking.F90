@@ -14,9 +14,10 @@ subroutine blocking(blockdata)
 !-----------------------------------------
 ! do stats for untransformed data first
 !-----------------------------------------
-
+  print *, blockdata
   ndata = size(blockdata)
-
+  print *, 'size of blockdata = ', ndata
+  call exit(1)
   xbar = 0.0
   do i=1,ndata
     xbar = xbar + blockdata(i)
