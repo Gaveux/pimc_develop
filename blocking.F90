@@ -13,10 +13,10 @@ subroutine blocking_transformation(blockdata)
 !-----------------------------------------
 ! do stats for untransformed data first
 !-----------------------------------------
-  print *, blockdata
+  !print *, blockdata
   ndata = size(blockdata)
-  print *, 'size of blockdata = ', ndata
-  call exit(1)
+  !print *, 'size of blockdata = ', ndata
+  !call exit(1)
   xbar = 0.0
   do i=1,ndata
     xbar = xbar + blockdata(i)
@@ -54,8 +54,8 @@ subroutine blocking_transformation(blockdata)
 ! then dive right in to the blocking algorithm
 !-------------------------------------------------------
 
-  print *, ' blocking transformation '
-  print *, ' j,   sigma,   sigma dev '
+  print *, '==== blocking transformation ====='
+  print *, '    j      sigma        sigma dev '
 
   do j=1,nblock
 
@@ -88,6 +88,7 @@ subroutine blocking_transformation(blockdata)
     print 10, j, sigma,sigmadev
 
   enddo
+   print *, '=================================='
 
 10  format(2x,i4,2x,2(2x,g12.5))
 
