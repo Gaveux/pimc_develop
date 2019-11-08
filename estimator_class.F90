@@ -127,8 +127,15 @@ module Estimator_class
                 !endif
                 
                 call update_block(this%vars(i))
+                !call print_block(this%vars(i))
+                !call reset(this%vars(i))
             enddo
             call print_block(this%vars(1))
+            
+            do i=1,9
+               call reset(this%vars(i))
+            enddo
+
 
         end subroutine estimator_block
 
@@ -140,16 +147,17 @@ module Estimator_class
                     write(*,*) 'Total Average Energy'
                 
                 else if(i.eq.4) then
-            !        write(*,*) 'Kinetic Energy'
+                    write(*,*) 'Kinetic Energy'
                 
                 else if (i.eq.7) then
-            !        write(*,*) 'Potential Energy'
+                    write(*,*) 'Potential Energy'
 
                 endif
                 call print_end(this%vars(i))
             enddo
              
-            !write(*,*) 'Total average energy:', this%vars(1)%mean_tot
+           ! write(*,*) 'Total average energy:', this%vars(1)%mean_tot
+            !write(*,*) this%vars(4)%mean_tot
         end subroutine estimator_end
         
         !==========================================================================
