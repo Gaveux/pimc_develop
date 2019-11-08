@@ -31,7 +31,7 @@ module path_integral_monte_carlo
         type(molsysdat), intent(in) :: sys
         type(pimc_par), intent(inout) :: pimc
         integer, intent(in) :: num_moves
-        integer :: i,j,k
+        integer :: i,j,k, NumBlocksLeft, BlocksToEquilLeft
         type (estimator) :: est
         print *, '==============================================================================='
         print *, '               - PIMC90 - the temperature effect  - '
@@ -54,8 +54,15 @@ module path_integral_monte_carlo
                enddo
                read(599,*) est
                read(599,*) ! skip the block number line
-               read(599,*) pimc%NumBlocks, pimc%BlocksToEquil
+               !read(599,*) pimc%NumBlocks, pimc%BlocksToEquil
+               read(599,*) NumBlocksLeft, BlocksToEquilLeft
             close(unit=599)
+            
+            !if NumBlocks = 0 then take the value from original pimc.in
+            if (NumBlocksLeft .NE. 0) then
+               pimc%NumBlocks = NumBlocksLeft
+               pimc%BlocksToEquil = BlocksToEquilLeft
+            endif
             print *, ' Number of blocks                            ',pimc%NumBlocks 
             print *, ' Number of blocks to equilibrium             ',pimc%BlocksToEquil
         endif
@@ -138,7 +145,7 @@ module path_integral_monte_carlo
         logical :: equil = .TRUE.
         logical :: atom_move
         integer :: first_moved,last_moved
-        integer :: j,k
+        integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 
         atom_pass=0
         !determine the number of moves that need to be made per monte carlo pass
@@ -169,8 +176,13 @@ module path_integral_monte_carlo
              enddo
              read(599,*) est 
              read(599,*) ! skip the block number line
-             read(599,*) pimc%NumBlocks, pimc%BlocksToEquil
+             read(599,*) NumBlocksLeft, BlocksToEquilLeft
              close(unit=599)
+             
+             if (NumBlocksLeft .NE. 0) then
+                pimc%NumBlocks = NumBlocksLeft
+                pimc%BlocksToEquil = BlocksToEquilLeft
+             endif
              !print *, pimc%NumBlocks, pimc%BlocksToEquil
         endif
          
