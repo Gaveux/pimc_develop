@@ -132,12 +132,15 @@ module Estimator_class
                 
                 call update_block(this%vars(i))
 
-                if (pimc%blocking == 'y') then
-                   call print_block(pimc,this%vars(1))
-                else
-                   call print_block(pimc,this%vars(i))
-                endif
+                !if (pimc%blocking == 'n') then
+                !   call print_block(pimc,this%vars(i))
+                !endif
             enddo
+            
+            !if (pimc%blocking == 'y' ) then
+            call print_block(pimc,this%vars(1))
+            !endif
+
             do i=1,9
                call reset(this%vars(i))
             enddo
