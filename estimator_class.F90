@@ -89,6 +89,7 @@ module Estimator_class
                     call update(this%vars(4),results(2))
                     call update(this%vars(7),results(3))
 
+
                 !Else if we are using the chin action use the chin action estimators
                 else if (pimc%act%act_type.eq.2) then
                     call energy_thermo_ca(sys,pimc,Beads,results)
@@ -110,28 +111,33 @@ module Estimator_class
 
         end subroutine estimator_step
 
-        subroutine estimator_block(this)
+        subroutine estimator_block(pimc,this)
             type (estimator), intent(inout) :: this
+            type (pimc_par), intent(in) :: pimc
 
             integer :: i
 
+         
+
             do i=1,9
-                !if(i.eq.1) then
-                !    write(*,*) 'Energy'
+                if(i.eq.1) then
+                    !write(*,*) 'Energy'
                 
-                !else if(i.eq.4) then
-                !    write(*,*) 'Kinetic Energy'
+                else if(i.eq.4) then
+                    !write(*,*) 'Kinetic Energy'
                 
-                !else if (i.eq.7) then
-                !    write(*,*) 'Potential Energy'
-                !endif
+                else if (i.eq.7) then
+                    !write(*,*) 'Potential Energy'
+                endif
                 
                 call update_block(this%vars(i))
-                !call print_block(this%vars(i))
-                !call reset(this%vars(i))
+
+                if (pimc%blocking == 'y') then
+                   call print_block(pimc,this%vars(1))
+                else
+                   call print_block(pimc,this%vars(i))
+                endif
             enddo
-            call print_block(this%vars(1))
-            
             do i=1,9
                call reset(this%vars(i))
             enddo

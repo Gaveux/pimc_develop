@@ -8,6 +8,7 @@ module path_integral_monte_carlo
     use binning
     use prng
     use seed
+    use blocking
 
 #ifdef FREE_ENERGY
     use free_energy
@@ -97,13 +98,17 @@ module path_integral_monte_carlo
             endif
         endif
 #endif
-
+        if (pimc%blocking == 'y') then
+           print *,  '--------------------------------------------------------------------'
+           print *,  '              Convergence test using Flyvbjerg blocking algorithm  '
+        elseif (pimc%blocking== 'n') then
+           print *,  '--------------------------------------------------------------------' 
+        endif
+        
         if (pimc%Restart == 'y') then
-            print *, '--------------------------------------------------------------------'
             print *, '              Resuming path integral MC calculation                 '
             print *, '--------------------------------------------------------------------'
         else
-            print *, '--------------------------------------------------------------------'
             print *, '              Starting path integral MC calculation                 '
             print *, '--------------------------------------------------------------------'
         endif
@@ -363,7 +368,7 @@ module path_integral_monte_carlo
             !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
          
             if(pimc%move%move_type.eq.1) then
-                !write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
+               ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
             endif
 
             if(pimc%Sample==1) then
@@ -391,9 +396,9 @@ module path_integral_monte_carlo
                 endif
                 if(pimc%doSample==1) then
 #endif
-                call update_block(est)
+                call update_block(pimc,est)
             
-                ! writing checkpoint for blocking algorithm and energy estimator
+                ! writing checkpoint for energy estimator and errors
                 open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
                 write(599,*) est
                 write(599,*) 'block number: ', iblock
@@ -404,6 +409,7 @@ module path_integral_monte_carlo
                 endif
 #endif
             endif
+            
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
 #ifdef FREE_ENERGY
@@ -417,7 +423,10 @@ module path_integral_monte_carlo
         if(pimc%Sample==1) then
             call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
         endif
-
+        
+        if(pimc%blocking=='y') then
+          call blk_count(pimc%blk)
+        endif
         ! calculate total average energy and acceptance probability
         acctot=acctot/dble(pimc%NumBlocks)
         moveacctot=moveacctot/dble(pimc%NumBlocks)
