@@ -30,8 +30,10 @@ module path_integral_monte_carlo
 
     subroutine print_pimc_header(sys,pimc,num_moves)
         type(molsysdat), intent(in) :: sys
-        type(pimc_par), intent(in) :: pimc
+        type(pimc_par), intent(inout) :: pimc
         integer, intent(in) :: num_moves
+        integer :: i,j,k, NumBlocksLeft, BlocksToEquilLeft
+        type (estimator) :: est
         print *, '==============================================================================='
         print *, '               - PIMC90 - the temperature effect  - '
         print *, '==============================================================================='
@@ -39,8 +41,33 @@ module path_integral_monte_carlo
         print *, ' Total number of beads                       ',pimc%NumBeads 
         print *, ' Number of Effective Beads                   ',pimc%NumBeadsEff
         print *, ' Step size for initial displacement          ',pimc%IniDisp
-        print *, ' Number of blocks                            ',pimc%NumBlocks
-        print *, ' Number of blocks to equilibrium             ',pimc%BlocksToEquil
+
+        if (pimc%Restart == 'n') then
+           print * ,' Number of blocks                            ',pimc%NumBlocks
+           print *, ' Number of blocks to equilibrium             ',pimc%BlocksToEquil
+        else if (pimc%Restart == 'y') then
+             open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
+               read(599,*) ! skip the seedvalue line
+               do j=1,pimc%NumBeadsEff
+                  do k=1,sys%natom
+                   read(599,*) !skip beads configurations
+                  enddo
+               enddo
+               read(599,*) est
+               read(599,*) ! skip the block number line
+               !read(599,*) pimc%NumBlocks, pimc%BlocksToEquil
+               read(599,*) NumBlocksLeft, BlocksToEquilLeft
+            close(unit=599)
+            
+            !if NumBlocks = 0 then take the value from original pimc.in
+            if (NumBlocksLeft .NE. 0) then
+               pimc%NumBlocks = NumBlocksLeft
+               pimc%BlocksToEquil = BlocksToEquilLeft
+            endif
+            print *, ' Number of blocks                            ',pimc%NumBlocks 
+            print *, ' Number of blocks to equilibrium             ',pimc%BlocksToEquil
+        endif
+
         print *, ' Number of Monte Carlo steps per block       ',pimc%StepsPerBlock
         print *, ' Temperature in Kelvin                       ',pimc%Temperature
         print *, ' Trial Moves type                            ',pimc%move%move_type
@@ -123,7 +150,7 @@ module path_integral_monte_carlo
         logical :: equil = .TRUE.
         logical :: atom_move
         integer :: first_moved,last_moved
-        integer :: j,k
+        integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 
         atom_pass=0
         !determine the number of moves that need to be made per monte carlo pass
@@ -153,8 +180,15 @@ module path_integral_monte_carlo
                 enddo 
              enddo
              read(599,*) est 
+             read(599,*) ! skip the block number line
+             read(599,*) NumBlocksLeft, BlocksToEquilLeft
              close(unit=599)
-
+             
+             if (NumBlocksLeft .NE. 0) then
+                pimc%NumBlocks = NumBlocksLeft
+                pimc%BlocksToEquil = BlocksToEquilLeft
+             endif
+             !print *, pimc%NumBlocks, pimc%BlocksToEquil
         endif
          
         !initialise the action type
@@ -182,7 +216,7 @@ module path_integral_monte_carlo
 
         acctot=0.0
         moveacctot=0.0
-        
+ 
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
             accept = 0.0
@@ -343,8 +377,16 @@ module path_integral_monte_carlo
                     call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
                 enddo
             endif
-
+            
+            pimc%NumBlocksLeft = pimc%NumBlocks - iblock
+            pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
+ 
             if(equil) then
+                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
+                write(599,*) est
+                write(599,*) 'block number: ', iblock
+                write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft 
+                close(unit=599)
 
             else
 #ifdef FREE_ENERGY
@@ -360,6 +402,7 @@ module path_integral_monte_carlo
                 open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
                 write(599,*) est
                 write(599,*) 'block number: ', iblock
+                write(599,*) pimc%NumBlocksLeft, '0'   
                 close(unit=599)
 
 #ifdef FREE_ENERGY

@@ -33,9 +33,9 @@ module vars_class
         module procedure print_var_end
     end interface
 
-    !interface reset
-     !   module procedure reset_block_var
-    !end interface 
+    interface reset
+        module procedure reset_block_var
+    end interface 
 
     contains
         subroutine init_vars(this)!,var_name
@@ -69,14 +69,14 @@ module vars_class
             return
         end subroutine update_step_var
 
-        !subroutine reset_block_var(this) ! this is never called in estimator_class
-         !   type (vars), intent(inout) ::this
-          !  this%n_block=0
-           ! this%var_block=0.0
-           ! this%mean_block=0.0
-           ! this%diffsqr=0.0
+        subroutine reset_block_var(this)
+            type (vars), intent(inout) ::this
+            this%n_block=0
+            this%var_block=0.0
+            this%mean_block=0.0
+            this%diffsqr=0.0
 
-        !end subroutine reset_block_var
+        end subroutine reset_block_var
 
         subroutine update_block_var(this)
             type (vars), intent(inout) :: this
@@ -153,10 +153,10 @@ module vars_class
                    close(unit=199)
                 endif
               endif
-            this%n_block=0
-            this%var_block=0.0
-            this%mean_block=0.0
-            this%diffsqr=0.0
+            !this%n_block=0
+            !this%var_block=0.0
+            !this%mean_block=0.0
+            !this%diffsqr=0.0
         end subroutine print_var_block
 
 

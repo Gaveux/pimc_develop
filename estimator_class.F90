@@ -117,6 +117,8 @@ module Estimator_class
 
             integer :: i
 
+         
+
             do i=1,9
                 if(i.eq.1) then
                     !write(*,*) 'Energy'
@@ -136,6 +138,10 @@ module Estimator_class
                    call print_block(pimc,this%vars(i))
                 endif
             enddo
+            do i=1,9
+               call reset(this%vars(i))
+            enddo
+
 
         end subroutine estimator_block
 
@@ -156,7 +162,8 @@ module Estimator_class
                 call print_end(this%vars(i))
             enddo
              
-            !write(*,*) 'Total average energy:', this%vars(1)%mean_tot
+           ! write(*,*) 'Total average energy:', this%vars(1)%mean_tot
+            !write(*,*) this%vars(4)%mean_tot
         end subroutine estimator_end
         
         !==========================================================================
