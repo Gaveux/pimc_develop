@@ -59,7 +59,7 @@ module pimc_structures
         real(kind=8) :: invBeta !1/beta = kb*T
         real(kind=8) :: invNumBeads !1/P
         character(len=1) :: Restart 
-        character(len=1) :: blocking  
+        character(len=1) :: blocking, WritingCheckpoint  
 
     end type pimc_par
     !-----------------------

@@ -123,6 +123,7 @@ program pimc90
     call read_system_data(sys,IN_SYSTEM)
     call read_pimc(sys,pimc,IN_PIMC)
     pimc%resume=rfilename
+    print *, 'Writing checkpoint file? ',pimc%WritingCheckpoint
     call read_iseed(seedval,pimc,IN_ISEED)
     call pimc_setup(seedval,sys,pimc,Beads,OldBeads)
     pimc%blk=bfilename

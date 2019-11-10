@@ -15,6 +15,8 @@ subroutine read_pimc(sys,pimc,in_file)
     ! 0
     ! Do we use a restart file
     ! n
+    ! Enable/Disable writing checkpoint file (y/n)
+    ! n
     ! Maximum step size for initial displacements
     ! 0.01
     !
@@ -122,6 +124,12 @@ subroutine read_pimc(sys,pimc,in_file)
     write(11,8) pimc%Restart
 8   format(a1)
     
+    ! Whether or not wirting checkpoint
+    read(7,80) icomm
+    write(11,80) icomm
+    read(7,8) pimc%WritingCheckpoint
+    write(11,8) pimc%WritingCheckpoint    
+ 
     !  read in the maximum step size for initial displacements
     read(7,80)icomm
     write(11,80) icomm
