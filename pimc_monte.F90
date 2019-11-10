@@ -59,7 +59,7 @@ module path_integral_monte_carlo
                read(599,*) NumBlocksLeft, BlocksToEquilLeft
             close(unit=599)
             
-            !if NumBlocks = 0 then take the value from original pimc.in
+            !if NumBlocks = 0 then take the value from pimc.in
             if (NumBlocksLeft .NE. 0) then
                pimc%NumBlocks = NumBlocksLeft
                pimc%BlocksToEquil = BlocksToEquilLeft
@@ -169,8 +169,7 @@ module path_integral_monte_carlo
              call new(est)
 
         else if (pimc%Restart == 'y') then
-          ! need a flag for just in case the previous job did not enable
-          ! checkpoint printout 
+          ! need a flag for just in case the previous job did not write a checkpoint file 
              open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
              read(599,*) ! skip the seedvalue line
              do j=1,pimc%NumBeadsEff

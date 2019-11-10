@@ -32,6 +32,7 @@ subroutine read_iseed(seedval,pimc,IN_ISEED)
     !type (molsysdat) :: sys
     character(len=80) :: IN_ISEED
     integer :: i
+    logical :: file_exists
     
     if (pimc%Restart == 'n') then
        !call system('od -vAn -N4 -td4 < /dev/urandom > '//trim(IN_ISEED))
@@ -44,10 +45,17 @@ subroutine read_iseed(seedval,pimc,IN_ISEED)
        print *, '                 Initial SEED:', seedval%seedvalue
     
     else if (pimc%Restart == 'y') then
-       open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
-       read(599,*) seedval%seedvalue
-       close(unit=599)
-       print *, 'Resuming pimc using seed:', seedval%seedvalue
+       ! check whether the file exists first
+       inquire(file=adjustl(trim(pimc%resume)), exist = file_exists)
+       if (file_exists) then
+          open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
+          read(599,*) seedval%seedvalue
+          close(unit=599)
+          print *, 'Resuming pimc using seed:', seedval%seedvalue
+       else
+          print *, ' no checkpoint file found from the previous job'
+          call exit(1)
+       endif
 
     else
        print *, 'Error: no restart command detected!'
