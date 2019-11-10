@@ -35,7 +35,7 @@ module path_integral_monte_carlo
         integer :: i,j,k, NumBlocksLeft, BlocksToEquilLeft
         type (estimator) :: est
         print *, '==============================================================================='
-        print *, '               - PIMC90 - the temperature effect  - '
+        print *, '                      PIMC  the temperature effect  - '
         print *, '==============================================================================='
         print *, ' System Dimensionality                       ',sys%dimen
         print *, ' Total number of beads                       ',pimc%NumBeads 
@@ -98,20 +98,18 @@ module path_integral_monte_carlo
             endif
         endif
 #endif
-        if (pimc%blocking == 'y') then
-           print *,  '--------------------------------------------------------------------'
-           print *,  '              Convergence test using Flyvbjerg blocking algorithm  '
-        elseif (pimc%blocking== 'n') then
-           print *,  '--------------------------------------------------------------------' 
-        endif
         
-        if (pimc%Restart == 'y') then
+            print *, '--------------------------------------------------------------------'
+        if (pimc%Restart == 'y'.and.pimc%blocking == 'y') then
+            print *, '     Resume numerical convergence test using blocking algorithm     ' 
+        elseif(pimc%Restart =='y'.and.pimc%blocking == 'n' ) then
             print *, '              Resuming path integral MC calculation                 '
-            print *, '--------------------------------------------------------------------'
-        else
+        elseif(pimc%Restart =='n'.and.pimc%blocking == 'n')then
             print *, '              Starting path integral MC calculation                 '
-            print *, '--------------------------------------------------------------------'
+        elseif(pimc%Restart == 'n'.and. pimc%blocking == 'y') then 
+            print *, '     Start numerical convergence test using blocking algorithm      '
         endif
+            print *, '--------------------------------------------------------------------'
     end subroutine print_pimc_header
 
 
