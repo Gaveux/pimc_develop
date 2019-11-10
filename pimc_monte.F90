@@ -171,7 +171,8 @@ module path_integral_monte_carlo
              call new(est)
 
         else if (pimc%Restart == 'y') then
-           
+          ! need a flag for just in case the previous job did not enable
+          ! checkpoint printout 
              open(unit=599,file=adjustl(trim(pimc%resume)),status='old',action='read')
              read(599,*) ! skip the seedvalue line
              do j=1,pimc%NumBeadsEff
@@ -346,16 +347,19 @@ module path_integral_monte_carlo
             enddo
 
             !End of the step
-            
-            open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
-            ! save the seed value at the end of each block
-            write(599,*) seedval%seedvalue
-            ! Save the beads configuration at the end of each block
-            do i=1,pimc%NumBeadsEff
-               call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start ,.False.,sys%natom,sys%dimen)
-            enddo
-            close(unit=599)
-           
+            if (pimc%WritingCheckpoint =='y'.and.iblock.lt.pimc%BlocksToEquil+1) then 
+               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
+               ! save the seed value at the end of each block
+               write(599,*) seedval%seedvalue
+               ! Save the beads configuration at the end of each block
+               do i=1,pimc%NumBeadsEff
+                  call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
+               enddo
+               close(unit=599)
+            elseif(pimc%WritingCheckpoint == 'n') then
+
+               ! print *, 'Do nothing!'
+            endif
 
             !Process the results at the end of the block
             accept = accept / (pimc%StepsPerBlock*atom_pass)
@@ -397,13 +401,22 @@ module path_integral_monte_carlo
                 if(pimc%doSample==1) then
 #endif
                 call update_block(pimc,est)
-            
-                ! writing checkpoint for energy estimator and errors
-                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
-                write(599,*) est
-                write(599,*) 'block number: ', iblock
-                write(599,*) pimc%NumBlocksLeft, '0'   
-                close(unit=599)
+                
+                if (pimc%WritingCheckpoint =='y'.and.iblock.ge.pimc%BlocksToEquil+1) then
+                   ! writing checkpoint for energy estimator and errors
+                   open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
+                   write(599,*) seedval%seedvalue
+                   do i=1, pimc%NumBeadsEff
+                      call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
+                   enddo
+                   
+                   write(599,*) est
+                   write(599,*) 'block: ', iblock
+                   write(599,*) pimc%NumBlocksLeft, '0'   
+                   close(unit=599)
+                elseif (pimc%WritingCheckpoint == 'n') then
+                   !print *, 'Sorry! But you did not ask ~'
+                endif
 
 #ifdef FREE_ENERGY
                 endif

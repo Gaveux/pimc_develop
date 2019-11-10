@@ -499,29 +499,34 @@
 
             ! Write the beads geometry configuration into a checkpoint file
             ! at the end of each block, this is called in pimc_monte.F90	
-            subroutine writeCheckpoint(x,CHECKPOINT_DIR,start,close_file,natom,dimen)
+            subroutine writeCheckpoint(x,CHECKPOINT_DIR,start,WritingCheckpoint,close_file,natom,dimen)
                real(kind=8), dimension(:,:), intent(in) :: x
                character(len=80), intent(in) :: CHECKPOINT_DIR, start
                logical, intent(in) :: close_file
                integer, intent(in) :: natom, dimen
                integer :: i,j
+               character(len=1), intent(in) :: WritingCheckpoint
 
-               ! if it is told not to close the file write to checkpint
-               if(.not.close_file) then
-               !open(unit=599,file=trim(CHECKPOINT_DIR)//'/checkpoint',status='unknown',action='write')
-               open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
-               ! print *, 'writing bead configuration into', trim(checkpoint_dir)//trim(start)
-               ! this is Cartesian coordinates of atom in a single bead form
-               ! see pimc_monte.F90 for writing all beads configurations
-               do i=1,natom
-                  !do j=1,dimen
-                     write(599,*) (x(j,i),j=1,dimen)
-                  !enddo
-               enddo
+               if(WritingCheckpoint == 'y') then
+                  ! if it is told not to close the file write to checkpint
+                  if(.not.close_file) then
+                    !open(unit=599,file=trim(CHECKPOINT_DIR)//'/checkpoint',status='unknown',action='write')
+                    open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
+                    ! print *, 'writing bead configuration into', trim(checkpoint_dir)//trim(start)
+                    ! this is Cartesian coordinates of atom in a single bead form
+                    ! see pimc_monte.F90 for writing all beads configurations
+                    do i=1,natom
+                       !do j=1,dimen
+                          write(599,*) (x(j,i),j=1,dimen)
+                       !enddo
+                    enddo
             
-               ! if told to close the file write to checkpoint file
-               else 
-                 close(unit=599)
+                  else 
+                     close(unit=599)
+                  endif
+
+               elseif(WritingCheckpoint == 'n') then
+                  !print *, 'print rubbish'
                endif
             end subroutine
        end module binning
