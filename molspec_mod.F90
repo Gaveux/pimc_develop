@@ -3,7 +3,7 @@ module molecule_specs
    implicit none
    real(kind=8), parameter :: amu2au = 1822.888481
    real(kind=8), parameter :: bohr2m = 5.29177e-11
-   real(kind=8), parameter :: twopi = 6.28318530717959
+   real(kind=8), parameter :: twopi = 8.D0*DATAN(1.D0)
    real(kind=8), parameter :: kJ = 2625.4973
    real(kind=8), parameter :: kCal = kJ/4.12
    ! define the type
@@ -11,10 +11,10 @@ module molecule_specs
      integer natom,nbond,nint,iseed,ngroup
      character(len=70) :: title
      character(len=3), dimension(:), pointer ::  atom_label
-     real(kind=8), dimension(:), pointer :: mass
+     real(kind=8), dimension(:), pointer :: mass, invMass
      integer, dimension(:), pointer :: nb,mb
      integer :: dimen   !Stores the dimensionality of the system (3 for a molecule embedded in real space)
-     real(kind=8), dimension(:,:), pointer :: EquilibriumGeom
+     real(kind=8), dimension(:,:), pointer :: EquilibriumGeom, Bead1Geom, Bead2Geom
    end type molsysdat
    ! declare the constructor
    interface new
@@ -38,12 +38,17 @@ module molecule_specs
      endif
      this%title = title
      this%dimen = dimen
-     allocate(this%EquilibriumGeom(dimen,n),stat=ierr)
-     if (ierr.ne.0) stop 'Error allocating pimc_par%EquilibriumGeom'
+     !allocate(this%EquilibriumGeom(dimen,n),stat=ierr)
+     allocate(this%Bead1Geom(dimen,n),stat=ierr)
+     allocate(this%Bead2Geom(dimen,n),stat=ierr)
+     !if (ierr.ne.0) stop 'Error allocating pimc_par%EquilibriumGeom'
+     if (ierr.ne.0) stop 'Error allocating sys%Bead1Geom/Bead2Geom'
      allocate(this%atom_label(n),stat=ierr)
      if (ierr.ne.0) stop ' molsysdat allocation error: atom_label '
      allocate(this%mass(n),stat=ierr)
      if (ierr.ne.0) stop ' molsysdat allocation error: mass '
+     allocate(this%invMass(n),stat=ierr)
+     if (ierr.ne.0) stop ' molsysdat allocation error: invMass'
      allocate(this%nb(this%nbond),stat=ierr)
      if (ierr.ne.0) stop ' molsysdat allocation error: nb '
      allocate(this%mb(this%nbond),stat=ierr)

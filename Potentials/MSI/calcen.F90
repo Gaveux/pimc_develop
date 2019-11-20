@@ -145,7 +145,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR)
             dVdR(i) = dVdR(i) + Tay(k)*DWeight(i,k) + Weight(k)*dTaydR(k,i)
         enddo
     enddo
-    
     V = energy 
   return
 end subroutine

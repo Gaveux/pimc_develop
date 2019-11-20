@@ -54,7 +54,8 @@
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
-
+            !print *, 'x values'
+            !print *,x 
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
@@ -82,8 +83,6 @@
                 enddo
             enddo
             r=1/r
-           
-
         end subroutine potential
 
         !Initialise variables used in the modified shepard interpolation 

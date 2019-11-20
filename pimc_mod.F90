@@ -38,7 +38,7 @@ module pimc_structures
     !-----------------------
     type pimc_par
         !Number of initial geometries, Beads for each geometry, Number of Beads, Number of effective beads (3*NumBeads for chin action), Effective Beads per geom = 3*Beads per Geom for chin action
-        integer :: NumBeads, NumBeadsEff
+        integer :: NumBeads, NumBeadsEff, NumDiscretisation
         integer :: NumBlocks, BlocksToEquil, StepsPerBlock, NumBlocksLeft,BlocksToEquilLeft
         integer :: Sample
         character(len=80) :: start, resume, blk
@@ -57,7 +57,7 @@ module pimc_structures
         real(kind=8) :: IniDisp, Temperature
         real(kind=8) :: Beta
         real(kind=8) :: invBeta !1/beta = kb*T
-        real(kind=8) :: invNumBeads !1/P
+        real(kind=8) :: invNumBeads, invNumDiscretisation !1/P
         character(len=1) :: Restart 
         character(len=1) :: blocking, WritingCheckpoint  
 
@@ -124,6 +124,7 @@ module pimc_structures
                 Wout%dVdx(i,j) = Win%dVdx(i,j)
             enddo
         enddo
+
         !do i=1,size(Win%d2Vdx2,dim=1)
             !do j=1,size(win%d2Vdx2,dim=2)
                 !do k=1,size(win%d2Vdx2,dim=3)

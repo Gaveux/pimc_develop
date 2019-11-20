@@ -72,6 +72,7 @@ subroutine read_interp(interp, filename)
    write(11,81) comment_line
    read(7,*)    interp%nneigh
    write(11,*)  interp%nneigh
+   !print *, 'interp%nneigh = ', interp%nneigh
 
 !  Enter the energy error tolerance for confidrad.f
 

@@ -29,6 +29,5 @@
        pimc%Beta=1.0/pimc%invBeta
        pimc%invNumDiscretisation = 1.0d0/dble(pimc%NumDiscretisation)
       
-       print *, 'read_sym_test.F90  check'
        return
    end
