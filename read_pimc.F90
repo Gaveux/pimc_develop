@@ -344,7 +344,7 @@ subroutine read_pimc(sys,pimc,in_file)
     if(pimc%move%move_type==1 .and. pimc%NumBeadsEff .le. pimc%move%MovesPerStep  ) then
         stop 'Staging more beads than there are beads to move'
     endif
-
+    !print *, 'temperature = ',pimc%Temperature
     pimc%invBeta=3.16681520371153d-6*pimc%Temperature
     pimc%Beta = 1.0/pimc%invBeta
     pimc%invNumBeads = 1.0d0/dble(pimc%NumBeads)
