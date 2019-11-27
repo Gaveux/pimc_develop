@@ -352,10 +352,8 @@ module path_integral_monte_carlo
                do i=1,pimc%NumBeadsEff
                   call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
                enddo
-               close(unit=599)
-            elseif(pimc%WritingCheckpoint == 'n') then
+               !close(unit=599)
 
-               ! print *, 'Do nothing!'
             endif
 
             !Process the results at the end of the block
@@ -387,7 +385,7 @@ module path_integral_monte_carlo
                 write(599,*) est
                 write(599,*) 'block number: ', iblock
                 write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft 
-                close(unit=599)
+                !close(unit=599)
 
             else
 #ifdef FREE_ENERGY
@@ -410,8 +408,8 @@ module path_integral_monte_carlo
                    write(599,*) est
                    write(599,*) 'block: ', iblock
                    write(599,*) pimc%NumBlocksLeft, '0'   
-                   close(unit=599)
-                elseif (pimc%WritingCheckpoint == 'n') then
+                   !close(unit=599)
+                !elseif (pimc%WritingCheckpoint == 'n') then
                    !print *, 'Sorry! But you did not ask ~'
                 endif
 
@@ -433,7 +431,9 @@ module path_integral_monte_carlo
         if(pimc%Sample==1) then
             call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
         endif
-        
+        ! close checkpoint
+        call close_file(599)
+
         if(pimc%blocking=='y') then
           call blk_count(pimc%blk)
         endif

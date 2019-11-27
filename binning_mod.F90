@@ -509,24 +509,25 @@
 
                if(WritingCheckpoint == 'y') then
                   ! if it is told not to close the file write to checkpint
-                  if(.not.close_file) then
-                    !open(unit=599,file=trim(CHECKPOINT_DIR)//'/checkpoint',status='unknown',action='write')
-                    open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
+                    !open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
                     ! print *, 'writing bead configuration into', trim(checkpoint_dir)//trim(start)
                     ! this is Cartesian coordinates of atom in a single bead form
                     ! see pimc_monte.F90 for writing all beads configurations
                     do i=1,natom
-                       !do j=1,dimen
                           write(599,*) (x(j,i),j=1,dimen)
-                       !enddo
                     enddo
             
-                  else 
-                     close(unit=599)
-                  endif
+                  !endif
 
-               elseif(WritingCheckpoint == 'n') then
+               !elseif(WritingCheckpoint == 'n') then
                   !print *, 'print rubbish'
                endif
+            end subroutine
+            
+            subroutine close_file(filenumber)
+                 integer :: filenumber
+                 
+                 close(unit=filenumber)
+
             end subroutine
        end module binning
