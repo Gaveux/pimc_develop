@@ -56,6 +56,7 @@
             include 'calcen.int'
             !print *, 'x values'
             !print *,x 
+            
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
