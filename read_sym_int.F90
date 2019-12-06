@@ -25,7 +25,8 @@
        write(21,*) pimc%Temperature
  
        close(unit=17)
-       pimc%invBeta=3.16681520371153d-6*pimc%Temperature
+       
+       pimc%invBeta=3.16681520371153d-6*dble(pimc%Temperature)
        pimc%Beta=1.0/pimc%invBeta
        pimc%invNumDiscretisation = 1.0d0/dble(pimc%NumDiscretisation)
       

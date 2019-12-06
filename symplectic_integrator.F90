@@ -16,7 +16,7 @@ program symplectic_int_test
 
   ! for MSI
   type(msi_params) :: pot
-  character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM
+  character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM, OUT_COORD
   
   integer :: i 
   ! two parts, first I need Beads(i)%dVdx(k,j) to be parsed from pimc90
@@ -25,12 +25,15 @@ program symplectic_int_test
   !two thoughts for generating the initial geometry
   ! 1: averaged from MC converged geometries
   ! 2: one of the converged geometries that gives the minimium energy 
-  
   call getarg(1,IN_SYSTEM)
   call getarg(2,IN_FILE)
   call getarg(3,IN_INTERP)
   call getarg(4,POT_FILE)
   call getarg(5,IN_ATOMPERM)
+  call getarg(6,OUT_COORD)
+
+
+  !call system('mkdir -p '//trim(OUT_COORD)) 
 
   !read input file
   call read_system_data(sys,IN_SYSTEM) !reading initial geo is also implemented here
@@ -61,7 +64,7 @@ program symplectic_int_test
   !print *,  Beads(i)%VCurr
   ! this line enforces the periodicity
   !call copy(Beads(1),Beads(pimc%NumBeads+1)) 
-  call numerical_integrator(sys,pimc,pot) 
+  call numerical_integrator(sys,pimc,pot,OUT_COORD) 
 
   ! main routine - iterating the symplectic integrator
   !call symplectic_integrator()
