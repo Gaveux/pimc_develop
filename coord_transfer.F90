@@ -4,18 +4,18 @@
    module coordinate_transformation
      use molecule_specs
      use pimc_structures
+     use debug
 
      implicit none
 
      interface trans
-        module procedure coord_trans
+        module procedure coord_translation
      end interface
 
      contains
      
 
-     ! take the first bead of the first atom as the origin
-     subroutine coord_trans(Beads,pimc,sys)
+     subroutine coord_translation(Beads,pimc,sys)
       implicit none
       
       type(molsysdat),intent(in) :: sys
@@ -23,6 +23,7 @@
       type(pimc_particle), dimension(:), pointer :: Beads
       
       real(kind=8),dimension(sys%dimen) :: diff
+      real(kind=8),dimension(2) :: x_axis_diff
  
       integer :: i,j,k
        
@@ -35,7 +36,18 @@
                Beads(i)%x(:,k) = Beads(i)%x(:,k) - diff
            enddo
       enddo
-       
+      call print_beads_coordinates(Beads,sys,pimc)
+
+
      end subroutine coord_trans
+
+     subroutine reset_reference(Beads)
+       !type(molsysdat), intent(in) :: sys
+       !type(pimc_par) :: pimc
+       type(pimc_particle), dimension(:), pointer :: Beads
+      
+       Beads(1)%x(:,1) = 0.d0
+
+     end subroutine reset_reference
 
    end

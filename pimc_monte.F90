@@ -9,6 +9,8 @@ module path_integral_monte_carlo
     use prng
     use seed
     use blocking
+    use coordinate_transformation
+    use debug
 
 #ifdef FREE_ENERGY
     use free_energy
@@ -243,6 +245,7 @@ module path_integral_monte_carlo
                         endif
 #endif                  
                         call trial_move(seedval,sys,pimc,Beads,atom_move,first_moved,last_moved)
+                        call coord_translation(Beads,pimc,sys)
 #ifdef FREE_ENERGY
                         !If using classical to quantum scaling all the beads have to be updated
                         if (pimc%free%free_type == 0.and. pimc%doFree==1) then
@@ -344,7 +347,7 @@ module path_integral_monte_carlo
             enddo
 
             !End of the step
-            if (pimc%WritingCheckpoint =='y'.and.iblock.lt.pimc%BlocksToEquil+1) then 
+            if (pimc%WritingCheckpoint =='y') then 
                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
@@ -352,7 +355,7 @@ module path_integral_monte_carlo
                do i=1,pimc%NumBeadsEff
                   call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
                enddo
-               !close(unit=599)
+               close(unit=599)
 
             endif
 
@@ -385,7 +388,7 @@ module path_integral_monte_carlo
                 write(599,*) est
                 write(599,*) 'block number: ', iblock
                 write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft 
-                !close(unit=599)
+                close(unit=599)
 
             else
 #ifdef FREE_ENERGY
@@ -397,7 +400,8 @@ module path_integral_monte_carlo
 #endif
                 call update_block(pimc,est)
                 
-                if (pimc%WritingCheckpoint =='y'.and.iblock.ge.pimc%BlocksToEquil+1) then
+                if (pimc%WritingCheckpoint =='y') then
+                   !.and.iblock.ge.pimc%BlocksToEquil+1) then
                    ! writing checkpoint for energy estimator and errors
                    open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
                    write(599,*) seedval%seedvalue
@@ -408,8 +412,8 @@ module path_integral_monte_carlo
                    write(599,*) est
                    write(599,*) 'block: ', iblock
                    write(599,*) pimc%NumBlocksLeft, '0'   
-                   !close(unit=599)
-                !elseif (pimc%WritingCheckpoint == 'n') then
+                   close(unit=599)
+                elseif (pimc%WritingCheckpoint == 'n') then
                    !print *, 'Sorry! But you did not ask ~'
                 endif
 
