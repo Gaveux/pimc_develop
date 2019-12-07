@@ -39,7 +39,7 @@
       call print_beads_coordinates(Beads,sys,pimc)
 
 
-     end subroutine coord_trans
+     end subroutine coord_translation
 
      subroutine reset_reference(Beads)
        !type(molsysdat), intent(in) :: sys
