@@ -5,12 +5,14 @@
 module quaternion_mod
     use vec_mod
     !use mt19937
-    !use prng
+    use prng
+    use seed
+    use moves
 
     implicit none
 
-    real(kind=8),parameter :: twopi_quat = 6.28318530718
-    real(kind=8),parameter :: pi_quat = 3.14159265358979323
+    real(kind=8),parameter :: twopi_quat = 8.D0*ATAN(1.D0)
+    real(kind=8),parameter :: pi_quat = 4.D0*ATAN(1.D0)
     type quaternion
         real(kind=8), dimension(4) :: q
     end type quaternion
@@ -39,10 +41,10 @@ module quaternion_mod
 
     subroutine quaternion_empty(this)
         type(quaternion), intent(out) :: this
-        this%q(1) = 1
-        this%q(2) = 0
-        this%q(3) = 0
-        this%q(4) = 0
+        this%q(1) = 1.d0
+        this%q(2) = 0.d0
+        this%q(3) = 0.d0
+        this%q(4) = 0.d0
     end subroutine quaternion_empty
 
     subroutine quaternion_val(this,w,x,y,z)
@@ -167,7 +169,7 @@ module quaternion_mod
         res%q(4) =  + a(1)*b%q(3) - a(2)*b%q(2) + a(3)*b%q(1)
     end function vq_mul
 
-    !returns the vector that is obtained when a is rotated by b.  Assumes that all of the quaternions are normalised
+    !returns the vector that is obtained when a is rotated by b.  Assumes that all of the quaternions are normalised, a is the quaternion, b is the vector
     function quaternion_rotate(a, b) result(arr)
         type(quaternion), intent(inout) :: a
         real(kind=8), dimension(3), intent(in) :: b
@@ -194,7 +196,7 @@ module quaternion_mod
         norm = 0.0
         do i=1,4
             norm = norm + this%q(i)**2
-        enddo
+        enddo 
     end function length2_quat
 
     !gets the quaternion that will rotate a onto b
@@ -205,7 +207,10 @@ module quaternion_mod
         real(kind=8) :: cos_theta,k, temp
 
         cos_theta = dot_product(a,b)
+        !print *, cos_theta
+        !call exit(1)
         k = sqrt(dot_product(a,a)*dot_product(b,b))
+        !print *, 'cos(theta) = ', cos_theta/k
         if(cos_theta/k == -1) then
             temp = abs(dot_product(a,[1.0,0.0,0.0]))
             if(temp < 1.0) then
@@ -216,31 +221,33 @@ module quaternion_mod
             call quaternion_axisangle(quat, normalise(cross(a,other)),pi_quat)
         endif
         other = cross(a,b)
-        call quaternion_val(quat,cos_theta+k,other(1), other(2), other(3))
+        call quaternion_val(quat,cos_theta+k,other(1), other(2), other(3)) 
         call normalise_quat(quat)
     end function get_rotation_between
 
     !generates a random quaternion that uniformly samples SO(3)
     !https://www-preview.ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf
-    !function random_quaternion(dang) result(quat)
-    !    real(kind=8), intent(in) :: dang
-    !    type(quaternion) :: quat
-    !    real(kind=8) :: x1, x2, x3, xnorm, ang
-    !    real(kind=8), dimension(3) :: axis
-    !    x1 = gauss_dev()
-    !    x2 = gauss_dev()
-    !    x3 = gauss_dev()
-    !    do while (abs(x1) < 1e-14 .and. abs(x2) < 1e-14 .and. abs(x3) < 1e-14) 
-    !        x1 = gauss_dev()
-    !        x2 = gauss_dev()
-    !        x3 = gauss_dev()
-    !    enddo
-    !    xnorm = 1.0/sqrt(x1**2 + x2**2 + x3**2)
-    !    x1 = x1*xnorm
-    !    x2 = x2*xnorm
-    !    x3 = x3*xnorm
-    !    axis = [x1,x2,x3]
-    !    ang = genrand_real3()*dang
-    !    call new(quat,axis,ang)
-    !end function random_quaternion
+    function random_quaternion(dang,seedval) result(quat)
+        real(kind=8), intent(in) :: dang
+        type(mod_seed), intent(inout) :: seedval
+        type(quaternion) :: quat
+        real(kind=8) :: x1, x2, x3, xnorm, ang
+        real(kind=8), dimension(3) :: axis
+        x1 = gauss_dev(seedval)
+        x2 = gauss_dev(seedval)
+        x3 = gauss_dev(seedval)
+        do while (abs(x1) < 1e-14 .and. abs(x2) < 1e-14 .and. abs(x3) < 1e-14) 
+            x1 = gauss_dev(seedval)
+            x2 = gauss_dev(seedval)
+            x3 = gauss_dev(seedval)
+        enddo
+        xnorm = 1.0/sqrt(x1**2 + x2**2 + x3**2)
+        x1 = x1*xnorm
+        x2 = x2*xnorm
+        x3 = x3*xnorm
+        axis = [x1,x2,x3]
+        !ang = genrand_real3()*dang
+        ang = genrand_real(seedval%seedvalue)*dang
+        call new(quat,axis,ang)
+    end function random_quaternion
 end module quaternion_mod

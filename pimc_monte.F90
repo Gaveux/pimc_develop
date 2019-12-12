@@ -246,6 +246,12 @@ module path_integral_monte_carlo
 #endif                  
                         call trial_move(seedval,sys,pimc,Beads,atom_move,first_moved,last_moved)
                         call coord_translation(Beads,pimc,sys)
+                       ! do i = 1, pimc%NumBeadsEff
+                       !    call print_Beads_distance(i,Beads,sys,pimc)
+                       ! enddo
+                       ! call coord_rotation(Beads,pimc,sys)
+                        !call coord_rotation(Beads,pimc,sys,seedval)
+                        !call exit(1)
 #ifdef FREE_ENERGY
                         !If using classical to quantum scaling all the beads have to be updated
                         if (pimc%free%free_type == 0.and. pimc%doFree==1) then
