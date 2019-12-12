@@ -133,7 +133,7 @@ module Estimator_class
                 call update_block(this%vars(i))
 
                 !if (pimc%blocking == 'n') then
-                !   call print_block(pimc,this%vars(i))
+                 !  call print_block(pimc,this%vars(i))
                 !endif
             enddo
             
