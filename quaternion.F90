@@ -5,9 +5,9 @@
 module quaternion_mod
     use vec_mod
     !use mt19937
-    use prng
-    use seed
-    use moves
+    !use prng
+    !use seed
+    !use moves
 
     implicit none
 
@@ -227,27 +227,27 @@ module quaternion_mod
 
     !generates a random quaternion that uniformly samples SO(3)
     !https://www-preview.ri.cmu.edu/pub_files/pub4/kuffner_james_2004_1/kuffner_james_2004_1.pdf
-    function random_quaternion(dang,seedval) result(quat)
-        real(kind=8), intent(in) :: dang
-        type(mod_seed), intent(inout) :: seedval
-        type(quaternion) :: quat
-        real(kind=8) :: x1, x2, x3, xnorm, ang
-        real(kind=8), dimension(3) :: axis
-        x1 = gauss_dev(seedval)
-        x2 = gauss_dev(seedval)
-        x3 = gauss_dev(seedval)
-        do while (abs(x1) < 1e-14 .and. abs(x2) < 1e-14 .and. abs(x3) < 1e-14) 
-            x1 = gauss_dev(seedval)
-            x2 = gauss_dev(seedval)
-            x3 = gauss_dev(seedval)
-        enddo
-        xnorm = 1.0/sqrt(x1**2 + x2**2 + x3**2)
-        x1 = x1*xnorm
-        x2 = x2*xnorm
-        x3 = x3*xnorm
-        axis = [x1,x2,x3]
-        !ang = genrand_real3()*dang
-        ang = genrand_real(seedval%seedvalue)*dang
-        call new(quat,axis,ang)
-    end function random_quaternion
+  !  function random_quaternion(dang,seedval) result(quat)
+  !      real(kind=8), intent(in) :: dang
+  !      type(mod_seed), intent(inout) :: seedval
+  !      type(quaternion) :: quat
+  !      real(kind=8) :: x1, x2, x3, xnorm, ang
+  !      real(kind=8), dimension(3) :: axis
+  !      x1 = gauss_dev(seedval)
+  !      x2 = gauss_dev(seedval)
+  !      x3 = gauss_dev(seedval)
+  !      do while (abs(x1) < 1e-14 .and. abs(x2) < 1e-14 .and. abs(x3) < 1e-14) 
+  !          x1 = gauss_dev(seedval)
+  !          x2 = gauss_dev(seedval)
+  !          x3 = gauss_dev(seedval)
+  !      enddo
+  !      xnorm = 1.0/sqrt(x1**2 + x2**2 + x3**2)
+  !      x1 = x1*xnorm
+  !      x2 = x2*xnorm
+  !      x3 = x3*xnorm
+  !      axis = [x1,x2,x3]
+  !      !ang = genrand_real3()*dang
+  !      ang = genrand_real(seedval%seedvalue)*dang
+  !      call new(quat,axis,ang)
+  !  end function random_quaternion
 end module quaternion_mod
