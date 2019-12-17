@@ -77,14 +77,23 @@ subroutine read_system_data(sys,in_file)
 
     call new(sys,n,dimen,title)
 
-    !Read in bead 1 geometry and atomic mass and labels
+    !Read in atomic mass and labels
 
     read(7,80) comment_line
     write(11,80) comment_line
     do i=1,sys%natom
-        read(7,*) sys%atom_label(i), sys%mass(i), (sys%Bead1Geom(k,i),k=1,sys%dimen)
-        write(11,*) sys%atom_label(i), sys%mass(i), (sys%Bead1Geom(k,i),k=1,sys%dimen)
+        read(7,*) sys%atom_label(i), sys%mass(i)
+        write(11,*) sys%atom_label(i), sys%mass(i)
     enddo
+
+    ! Read in bead 1 geometry
+    read(7,80) comment_line
+    write(11,80) comment_line
+    do i=1,sys%natom
+        read(7,*) (sys%Bead1Geom(k,i),k=1,sys%dimen)
+        write(11,*) (sys%Bead1Geom(k,i),k=1,sys%dimen)
+    enddo
+ 
 
     ! read in bead 2 geometry
     read(7,80) comment_line
