@@ -22,12 +22,15 @@
    integer :: i,j,k
    print *, 'beta**2 = ', pimc%Beta**2
    ! initial conditions
-   x_old = sys%Bead1Geom
-   x_older = sys%Bead2Geom
+   x_old = sys%Bead2Geom
+   x_older = sys%Bead1Geom
    !OlderDiscret%x = sys%Bead1Geom
    ! numerical integrator
    !do k=1,pimc%NumDiscretisation
-   do k=1, 50
+   open(unit=333,file=fileplace//trim(OUT_COORD),status='unknown',action='write',position='append')
+   write(333,*) x_older(:,1)
+   write(333,*) x_old(:,1)
+   do k=1, pimc%NumDiscretisation
        ! call potential
 
        call potential(k,pot,x_old,r,VCurr,dVdx)
@@ -49,7 +52,6 @@
           !print *, dVdx(i,1)
           !print *, (2.0*(pimc%invNumDiscretisation**2)*sys%invMass(1)*(pimc%Beta**2)*dVdx(i,1),i=1,sys%dimen)
        !enddo
-       open(unit=333,file=fileplace//trim(OUT_COORD),status='unknown',action='write',position='append')
        write(333,*) (x_temp(i,1), i = 1, sys%dimen)
        !print *, (x_temp(i,1), i = 1, sys%dimen)
       ! print *, x_old 
