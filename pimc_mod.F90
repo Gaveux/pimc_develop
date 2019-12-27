@@ -18,6 +18,7 @@ module pimc_structures
         real(kind=8) :: AtomDisp
         integer :: MovesPerStep
         real(kind=8) :: BeadDisp
+        real(kind=8) :: MinAtomDisp
     end type move_par
 
 #ifdef FREE_ENERGY

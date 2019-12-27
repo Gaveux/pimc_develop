@@ -172,6 +172,12 @@ subroutine read_pimc(sys,pimc,in_file)
     write(11,80) icomm
     read(7,*) pimc%move%MovesPerStep
     write(11,*) pimc%move%MovesPerStep
+  
+    ! read in the minimum atomic displacement parameter
+    read(7,80)icomm
+    write(11,80) icomm
+    read(7,*) pimc%move%MinAtomDisp
+    write(11,*) pimc%move%MinAtomDisp
 
     !##########################################################################
 

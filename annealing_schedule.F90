@@ -22,7 +22,6 @@ module annealing_schedule
      AtomDisp = pimc%move%AtomDisp
      else
      !determine at what iteration k updates
-        min_AtomDisp = 0.3d0
         move = 0.1d0*totalIteration
         
 
@@ -30,8 +29,8 @@ module annealing_schedule
            AtomDisp = pimc%move%AtomDisp*(1.0 - currentIteration/totalIteration)**4.0
 
            ! ideally we don't want AtomDisp to be too small
-           if (AtomDisp .le. min_AtomDisp) then
-              AtomDisp = min_AtomDisp
+           if (AtomDisp .le. pimc%move%MinAtomDisp) then
+              AtomDisp = pimc%move%MinAtomDisp
            endif
         endif
      endif

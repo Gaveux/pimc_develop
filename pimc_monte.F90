@@ -234,6 +234,7 @@ module path_integral_monte_carlo
             call annealing_condition(pimc,AtomDisp,iblock,.False.)
             endif
             pimc%move%AtomDisp = AtomDisp
+            print *,  pimc%move%AtomDisp
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
