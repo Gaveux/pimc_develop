@@ -9,6 +9,7 @@ module path_integral_monte_carlo
     use prng
     use seed
     use blocking
+    use annealing_schedule
 
 #ifdef FREE_ENERGY
     use free_energy
@@ -146,9 +147,11 @@ module path_integral_monte_carlo
         integer :: imove,iatom,num_moves,atom_pass
         integer :: n_bl, n_ba, n_d
         logical :: equil = .TRUE.
+        logical :: first_time = .TRUE.
         logical :: atom_move
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
+        real(kind=8) ::AtomDisp
 
         atom_pass=0
         !determine the number of moves that need to be made per monte carlo pass
@@ -222,6 +225,15 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE.
             endif
+
+            ! reducing AtomDisp based on annealing schedule
+            if (first_time) then
+            call annealing_condition(pimc,AtomDisp,iblock,.TRUE.)
+            first_time = .FALSE.
+            else
+            call annealing_condition(pimc,AtomDisp,iblock,.False.)
+            endif
+            pimc%move%AtomDisp = AtomDisp
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
