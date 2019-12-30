@@ -499,15 +499,15 @@
 
             ! Write the beads geometry configuration into a checkpoint file
             ! at the end of each block, this is called in pimc_monte.F90	
-            subroutine writeCheckpoint(x,CHECKPOINT_DIR,start,WritingCheckpoint,close_file,natom,dimen)
+            subroutine writeCheckpoint(x,CHECKPOINT_DIR,start,WritingCheckpoint,natom,dimen)
                real(kind=8), dimension(:,:), intent(in) :: x
                character(len=80), intent(in) :: CHECKPOINT_DIR, start
-               logical, intent(in) :: close_file
+               !logical, intent(in) :: close_file
                integer, intent(in) :: natom, dimen
                integer :: i,j
                character(len=1), intent(in) :: WritingCheckpoint
 
-               if(WritingCheckpoint == 'y') then
+               !if(WritingCheckpoint == 'y') then
                   ! if it is told not to close the file write to checkpint
                     !open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
                     ! print *, 'writing bead configuration into', trim(checkpoint_dir)//trim(start)
@@ -521,7 +521,7 @@
 
                !elseif(WritingCheckpoint == 'n') then
                   !print *, 'print rubbish'
-               endif
+               !endif
             end subroutine
             
             subroutine close_file(filenumber)

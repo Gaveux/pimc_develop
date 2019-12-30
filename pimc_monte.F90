@@ -142,7 +142,7 @@ module path_integral_monte_carlo
         integer :: iblock, iter, ibead
         real(kind=8) :: accept, acctot, moveacc, moveacctot
         real(kind=8) deltae, rand, B_init
-        integer :: i, ind
+        integer :: i, ind, ioerror
         integer :: imove,iatom,num_moves,atom_pass
         integer :: n_bl, n_ba, n_d
         logical :: equil = .TRUE.
@@ -220,7 +220,7 @@ module path_integral_monte_carlo
             accept = 0.0
             moveacc = 0.0
             if (iblock.eq.pimc%BlocksToEquil+1) then
-                equil=.FALSE.
+                equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
 
             B_init = pimc%Beta
@@ -344,17 +344,6 @@ module path_integral_monte_carlo
             enddo
 
             !End of the step
-            if (pimc%WritingCheckpoint =='y'.and.iblock.lt.pimc%BlocksToEquil+1) then 
-               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
-               ! save the seed value at the end of each block
-               write(599,*) seedval%seedvalue
-               ! Save the beads configuration at the end of each block
-               do i=1,pimc%NumBeadsEff
-                  call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
-               enddo
-               !close(unit=599)
-
-            endif
 
             !Process the results at the end of the block
             accept = accept / (pimc%StepsPerBlock*atom_pass)
@@ -377,15 +366,8 @@ module path_integral_monte_carlo
                 enddo
             endif
             
-            pimc%NumBlocksLeft = pimc%NumBlocks - iblock
-            pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
- 
-            if(equil) then
-                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='append')
-                write(599,*) est
-                write(599,*) 'block number: ', iblock
-                write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft 
-                !close(unit=599)
+            if(equil) then 
+               ! do nothing 
 
             else
 #ifdef FREE_ENERGY
@@ -396,26 +378,31 @@ module path_integral_monte_carlo
                 if(pimc%doSample==1) then
 #endif
                 call update_block(pimc,est)
-                
-                if (pimc%WritingCheckpoint =='y'.and.iblock.ge.pimc%BlocksToEquil+1) then
-                   ! writing checkpoint for energy estimator and errors
-                   open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',position='rewind')
-                   write(599,*) seedval%seedvalue
-                   do i=1, pimc%NumBeadsEff
-                      call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint, .False.,sys%natom,sys%dimen)
-                   enddo
-                   
-                   write(599,*) est
-                   write(599,*) 'block: ', iblock
-                   write(599,*) pimc%NumBlocksLeft, '0'   
-                   !close(unit=599)
-                !elseif (pimc%WritingCheckpoint == 'n') then
-                   !print *, 'Sorry! But you did not ask ~'
-                endif
 
 #ifdef FREE_ENERGY
                 endif
 #endif
+            endif
+            pimc%NumBlocksLeft = pimc%NumBlocks - iblock
+            pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
+            if (pimc%WritingCheckpoint =='y') then 
+               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
+               rewind(unit=599)
+               !if (ioerror.eq.0) stop 'checkpoint file io error'
+               ! save the seed value at the end of each block
+               write(599,*) seedval%seedvalue
+               ! Save the beads configuration at the end of each block
+               do i=1,pimc%NumBeadsEff
+                  call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint,sys%natom,sys%dimen)
+               enddo
+               write(599,*) est
+               write(599,*) 'block number: ', iblock
+               if (equil) then
+                 write(599,*) pimc%NumBlocksLeft, pimc%BlocksToEquilLeft
+               else
+                 write(599,*) pimc%NumBlocksLeft, '0'
+               endif
+              ! close(unit=599)
             endif
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
