@@ -138,7 +138,7 @@ module Estimator_class
             enddo
             
             !if (pimc%blocking == 'y' ) then
-            call print_block(pimc,this%vars(1))
+            !call print_block(pimc,this%vars(1))
             !endif
 
             do i=1,9

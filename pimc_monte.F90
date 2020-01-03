@@ -222,6 +222,7 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
+            print *, iblock
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
