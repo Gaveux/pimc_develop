@@ -51,12 +51,12 @@ subroutine read_interp(interp, filename)
 
    read(7,80)   comment_line
    write(11,81) comment_line
-   read(7,*)    interp%wtol, interp%outer
+   read(7,*)    interp%wtol, interp%outer ! weight cutoffs for inner and outer neighbour lists
    write(11,*)  interp%wtol, interp%outer
 
    read(7,80)   comment_line
    write(11,81) comment_line
-   read(7,*)    interp%neigh_update
+   read(7,*)    interp%neigh_update  ! # of time steps for updates of outer neighbour lists
    write(11,*)  interp%neigh_update
 
 !  read in energy maximum and minimum with which to screen data

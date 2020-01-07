@@ -52,6 +52,12 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   !----------------------------------------------------------
   !  build the inner neighbour list
   !----------------------------------------------------------
+  !NOTICE: 
+  ! when the magnitude of wtol becomes smaller, if condition is more likely
+  ! to return true, this results in more operations introduced, and this bit
+  ! can be expensive just to be noted !!
+ 
+  ! this is where should implement neigh_update  
 
   tol = interp%wtol*totsum
   do i=1,interp%ndata
