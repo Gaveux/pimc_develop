@@ -38,6 +38,7 @@ program pimc90
  
     character(len=80) :: OUT_DIRECTORY, IN_PIMC, IN_SYSTEM, IN_ISEED, IN_BINNING
     character(len=80) :: CHECKPOINT_DIRECTORY
+    integer :: iblock
 #if POT == 0
     type (msi_params) :: pot
     character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM
@@ -136,8 +137,9 @@ program pimc90
     ! calculate potential energies for the initial geometry
     do i=1,pimc%NumBeadsEff
 #if POT == 0
+      iblock = 0
       !MSI potential energy surfaces
-      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
+      call potential(iblock,i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
 #else
       !Analytic potential energy surfaces
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)

@@ -26,8 +26,8 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV)
-            integer, intent(in) :: ind
+        subroutine potential(iblock,ind,param,x,r,V,dV)
+            integer, intent(in) :: ind, iblock
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
             ! Cartesian positions of atoms in system
@@ -58,7 +58,7 @@
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
-            call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind))
+            call neighbour(iblock,param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind))
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 

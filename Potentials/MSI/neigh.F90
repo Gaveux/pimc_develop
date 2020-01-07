@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
+subroutine neighbour(iblock,sys,interp,pot,RawWeight,r,neigh)
   use interpolation
   use molecule_specs
   implicit none
@@ -14,11 +14,13 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
 
-  integer :: i,j
+  integer :: i,j,ierr
   real(kind=8) totsum,tol, tmpWeight
+  integer, intent(in) :: iblock
+  logical :: build_neigh = .FALSE.
+  integer, dimension(:), pointer :: inner_temp
+  integer :: temp_numInner
 
-  neigh%numInner=0    ! number of neighbours
-  neigh%inner = 0      ! list of (inner) neighbours
 
   !----------------------------------------------------------
   ! calculate raw weights and totsum in two loops for speed
@@ -53,19 +55,25 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   !  build the inner neighbour list
   !----------------------------------------------------------
   !NOTICE: 
-  ! when the magnitude of wtol becomes smaller, if condition is more likely
-  ! to return true, this results in more operations introduced, and this bit
+  ! when the magnitude of wtol becomes smaller, below if-condition is more likely
+  ! to return true, this results in more operations required, and this bit
   ! can be expensive just to be noted !!
- 
-  ! this is where should implement neigh_update  
-
-  tol = interp%wtol*totsum
-  do i=1,interp%ndata
-     if (RawWeight(i) > tol) then
-       neigh%numInner = neigh%numInner + 1
-       neigh%inner(neigh%numInner) = i
-     endif
-  enddo
+  if (mod(iblock,interp%neigh_update)==0) then
+    build_neigh = .TRUE.
+  endif
+  ! rebuild the inner neighbour list only when it is told to
+  if (build_neigh == .TRUE.) then
+  neigh%numInner=0    ! number of neighbours
+  neigh%inner = 0      ! list of (inner) neighbours
+    tol = interp%wtol*totsum
+    do i=1,interp%ndata
+       if (RawWeight(i) > tol) then
+         neigh%numInner = neigh%numInner + 1
+         neigh%inner(neigh%numInner) = i
+       endif
+    enddo
+    build_neigh = .FALSE.
+  endif
 
   !----------------------------------------------------------
 
