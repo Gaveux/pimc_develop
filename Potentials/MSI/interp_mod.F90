@@ -5,7 +5,8 @@ module interpolation
   ! parameters which are read in from IN_INTERP
   !---------------------------------------------
   type interp_params
-    integer :: ipart,neigh_update,nneigh,ngroup
+    integer :: ipart,nneigh,ngroup
+    integer :: inner_neigh_update,outer_neigh_update
     integer :: ipow,lowp, ipow2
     integer :: ndata,nforc
     real(kind=8) :: wtol,outer,vmax, vmin, sigma

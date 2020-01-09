@@ -18,8 +18,6 @@ subroutine neighbour(iblock,sys,interp,pot,RawWeight,r,neigh)
   real(kind=8) totsum,tol, tmpWeight
   integer, intent(in) :: iblock
   logical :: build_neigh = .FALSE.
-  integer, dimension(:), pointer :: inner_temp
-  integer :: temp_numInner
 
 
   !----------------------------------------------------------
@@ -58,7 +56,7 @@ subroutine neighbour(iblock,sys,interp,pot,RawWeight,r,neigh)
   ! when the magnitude of wtol becomes smaller, below if-condition is more likely
   ! to return true, this results in more operations required, and this bit
   ! can be expensive just to be noted !!
-  if (mod(iblock,interp%neigh_update)==0) then
+  if (mod(iblock,interp%inner_neigh_update)==0) then
     build_neigh = .TRUE.
   endif
   ! rebuild the inner neighbour list only when it is told to
