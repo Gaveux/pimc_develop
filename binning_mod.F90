@@ -468,32 +468,37 @@
             !called at the end of each block. If this is the first time
             !the subroutine is called it overwrites the old TOUT otherwise
             !it appends to TOUT
-            subroutine writeTOUT(x, V, OUT_DIR, close_file,natom,dimen)
+            !subroutine writeTOUT(x, V, OUT_DIR, close_file,natom,dimen)
+            subroutine writeTOUT(x, OUT_DIR, filename ,natom,dimen)
               real(kind=8), dimension(:,:), intent(in) :: x
-              real(kind=8), intent(in) :: V
-              character(len=80), intent(in) :: OUT_DIR
-              logical, intent(in) :: close_file
+              !real(kind=8), intent(in) :: V
+              character(len=80), intent(in) :: OUT_DIR, filename
+              !logical, intent(in) :: close_file
               integer, intent(in) :: natom,dimen
-              logical, save :: first_time = .TRUE.
+              !logical, save :: first_time = .TRUE.
               integer :: i,j
 
-              !if we have not been told to close the file write to tout
-              if(.not.close_file) then
-              !if the first time this is called overwrite the old tout file
-              if(first_time) then
-                first_time=.FALSE.
-              open(unit=999,file=trim(OUT_DIR)//'/TOUT',status='unknown',action='write')
-              endif
+              !!if we have not been told to close the file write to tout
+              !!if(.not.close_file) then
+              !!if the first time this is called overwrite the old tout file
+              !if(first_time) then
+              !  first_time=.FALSE.
+              !open(unit=999,file=trim(OUT_DIR)//'/TOUT',status='unknown',action='write')
+              !endif
 
+              !do i=1,natom
+              !  write(999,*) (x(j,i),j=1,dimen)
+              !enddo
+              !write(999,*) V
+
+              !!if it is time to close the file close the file
+              !else
+              !  close(unit=999)
+              !endif
               do i=1,natom
-                write(999,*) (x(j,i),j=1,dimen)
+                 write(999,*) (x(j,i),j=1,dimen)
               enddo
-              write(999,*) V
 
-              !if it is time to close the file close the file
-              else
-                close(unit=999)
-              endif
 
             end subroutine writeTOUT
 

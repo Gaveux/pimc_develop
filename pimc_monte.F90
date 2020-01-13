@@ -360,12 +360,12 @@ module path_integral_monte_carlo
                ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
             endif
 
-            if(pimc%Sample==1) then
+            !if(pimc%Sample==1) then
                 !at the end of each block write some geometries to tout
-                do i=1,pimc%NumBeadsEff
-                    call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
-                enddo
-            endif
+            !    do i=1,pimc%NumBeadsEff
+            !        call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
+            !    enddo
+            !endif
             
             if(equil) then 
                ! do nothing 
@@ -388,14 +388,16 @@ module path_integral_monte_carlo
             pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
             if (pimc%WritingCheckpoint =='y') then 
                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
-               rewind(unit=599)
-               !if (ioerror.eq.0) stop 'checkpoint file io error'
+                rewind(unit=599)
+               if (ioerror.eq.0) stop 'checkpoint file io error'
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
                ! Save the beads configuration at the end of each block
-               do i=1,pimc%NumBeadsEff
-                  call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint,sys%natom,sys%dimen)
-               enddo
+               if (equil == .False.) then
+                 do i=1,pimc%NumBeadsEff
+                    call writeCheckpoint(Beads(i)%x, checkpoint_dir, pimc%start, pimc%WritingCheckpoint,sys%natom,sys%dimen)
+                 enddo
+               endif
                write(599,*) est
                write(599,*) 'block number: ', iblock
                if (equil) then
@@ -403,11 +405,23 @@ module path_integral_monte_carlo
                else
                  write(599,*) pimc%NumBlocksLeft, '0'
                endif
-              ! close(unit=599)
+            endif
+            
+            ! writing beads configurations when MC becomes equilibrated
+            if (equil == .False.) then
+               open(unit=999,file=trim(OUT_DIR)//'/TOUT',status='unknown',action='write',iostat=ioerror,position='append')
+               if(ioerror.eq.0) stop 'tout file io error'
+               
+               do i=1,pimc%NumBeadsEff
+                  call writeTOUT(Beads(i)%x, out_dir, pimc%start,sys%natom,sys%dimen)
+               enddo
             endif
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
+        
+
+
 #ifdef FREE_ENERGY
         if(pimc%doSample==1) then
 #endif
@@ -416,11 +430,12 @@ module path_integral_monte_carlo
         endif
 #endif
         !close tout
-        if(pimc%Sample==1) then
-            call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
-        endif
+        !if(pimc%Sample==1) then
+        !    call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
+        !endif
         ! close checkpoint
         call close_file(599)
+        call close_file(999)
 
         if(pimc%blocking=='y') then
           call blk_count(pimc%blk)
