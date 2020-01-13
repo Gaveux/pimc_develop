@@ -516,8 +516,6 @@
                   ! if it is told not to close the file write to checkpint
                     !open(unit=599,file=trim(checkpoint_dir)//trim(start),status='unknown',action='write')
                     ! print *, 'writing bead configuration into', trim(checkpoint_dir)//trim(start)
-                    ! this is Cartesian coordinates of atom in a single bead form
-                    ! see pimc_monte.F90 for writing all beads configurations
                     do i=1,natom
                           write(599,*) (x(j,i),j=1,dimen)
                     enddo

@@ -409,7 +409,7 @@ module path_integral_monte_carlo
             
             ! writing beads configurations when MC becomes equilibrated
             if (equil == .False.) then
-               open(unit=999,file=trim(OUT_DIR)//'/TOUT',status='unknown',action='write',iostat=ioerror,position='append')
+               open(unit=999,file=trim(OUT_DIR)//trim(pimc%start),status='unknown',action='write',iostat=ioerror,position='append')
                if(ioerror.eq.0) stop 'tout file io error'
                
                do i=1,pimc%NumBeadsEff
