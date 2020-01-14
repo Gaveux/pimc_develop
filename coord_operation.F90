@@ -14,7 +14,7 @@
      contains
      
 
-     subroutine coord_translation(Beads)
+     subroutine coord_translation(Beads,BeadNumber)
       implicit none
       
       !type(molsysdat),intent(in) :: sys
@@ -22,6 +22,7 @@
       type(pimc_particle), dimension(:), pointer :: Beads
       
       real(kind=8),dimension(3) :: diff
+      integer, intent(in) :: BeadNumber
  
       integer :: i,j,k
       
@@ -31,7 +32,7 @@
       !print *, diff
 
       do k=1,5
-           do i=1,140
+           do i=1, BeadNumber
                Beads(i)%x(:,k) = Beads(i)%x(:,k) - diff
            enddo
       enddo
@@ -47,7 +48,7 @@
 
      end subroutine coord_translation
     
-     subroutine coord_rotation(Beads)
+     subroutine coord_rotation(Beads,BeadNumber)
      !subroutine coord_rotation(Beads,pimc,sys,seedval)
        implicit none
 
@@ -59,6 +60,7 @@
        type(quaternion) :: quad_x, quad_xy
        
        real(kind=8),dimension(3) :: x_axis, y_axis
+       integer, intent(in) :: BeadNumber
        
        integer :: i,j,k, ind
        real(kind=8) :: theta, pi
@@ -72,7 +74,7 @@
 
        ! rotate the entire system 
 
-       do k =1, 140
+       do k =1, BeadNumber
           do i = 1, 5
            Beads(k)%x(:,i) = quaternion_rotate(quad_x, Beads(k)%x(:,i))
           enddo
@@ -112,7 +114,7 @@
        call quaternion_val(quad_xy, cos(theta*0.5), sin(theta*0.5), 0.d0, 0.d0)
        
        ! rotate the entire system
-       do k =1, 140
+       do k =1, BeadNumber
           do i = 1, 5
              Beads(k)%x(:,i) = quaternion_rotate(quad_xy, Beads(k)%x(:,i))
           enddo
