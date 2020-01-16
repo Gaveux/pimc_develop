@@ -57,6 +57,7 @@ module Estimator_class
             type (pimc_par), intent(in) :: pimc
             type (pimc_particle), dimension(:), pointer :: Beads
             type (estimator), intent(inout) :: this
+            
 
             real(kind=8), dimension(3) :: results
 
@@ -72,15 +73,15 @@ module Estimator_class
                     call update(this%vars(4),results(2))
                     call update(this%vars(7),results(3))
 
-                    call energy_virial_pa(sys,pimc,Beads,results)
-                    call update(this%vars(2),results(1))
-                    call update(this%vars(5),results(2))
-                    call update(this%vars(8),results(3))
+                    !call energy_virial_pa(sys,pimc,Beads,results)
+                    !call update(this%vars(2),results(1))
+                    !call update(this%vars(5),results(2))
+                    !call update(this%vars(8),results(3))
 
-                    call energy_centvirial_pa(sys,pimc,Beads,results)
-                    call update(this%vars(3),results(1))
-                    call update(this%vars(6),results(2))
-                    call update(this%vars(9),results(3))
+                    !call energy_centvirial_pa(sys,pimc,Beads,results)
+                    !call update(this%vars(3),results(1))
+                    !call update(this%vars(6),results(2))
+                    !call update(this%vars(9),results(3))
 
                 !Else if we are using the takahashi-imada action use the takahashi-imada action estimators
                 else if (pimc%act%act_type.eq.1) then
@@ -111,11 +112,12 @@ module Estimator_class
 
         end subroutine estimator_step
 
-        subroutine estimator_block(pimc,this)
+        subroutine estimator_block(pimc,this,potentialOut,kineticOut)
             type (estimator), intent(inout) :: this
             type (pimc_par), intent(in) :: pimc
 
             integer :: i
+            integer, intent(in) :: kineticOut, potentialOut
 
          
 
@@ -139,6 +141,8 @@ module Estimator_class
             
             !if (pimc%blocking == 'y' ) then
             !call print_block(pimc,this%vars(1))
+            call print_block(pimc,this%vars(4),kineticOut)
+            call print_block(pimc,this%vars(7),potentialOut)
             !endif
 
             do i=1,9

@@ -137,14 +137,16 @@ module vars_class
 
 
 
-        subroutine print_var_block(pimc,this)
+        subroutine print_var_block(pimc,this,value)
             type (vars), intent(inout) :: this
             type (pimc_par), intent(in) :: pimc  
+            integer, intent(in) :: value
                
               if(this%n_block.ne.0) then
                 if (pimc%blocking == 'n') then
-                   write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
+                   !write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
                    !&           'Block Size: ', this%n_block
+                   write(value,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
                 else
                    open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
                    ! Do not make a dynamical array for this, because you cannot

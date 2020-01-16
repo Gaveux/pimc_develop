@@ -149,6 +149,7 @@ module path_integral_monte_carlo
         logical :: atom_move
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
+        integer :: kineticoutput, potentialoutput
 
         atom_pass=0
         !determine the number of moves that need to be made per monte carlo pass
@@ -204,16 +205,23 @@ module path_integral_monte_carlo
 #endif
     
         !initialise the types for binning parameters of the system
-        call read_number_hist(binning_in, sys%nbond, n_bl, n_ba, n_d)
-        call new(params,n_bl,n_ba,n_d)
-        call read_binning_params(params,binning_in,sys%nbond)
-        call new(bins,params)
+        !call read_number_hist(binning_in, sys%nbond, n_bl, n_ba, n_d)
+        !call new(params,n_bl,n_ba,n_d)
+        !call read_binning_params(params,binning_in,sys%nbond)
+        !call new(bins,params)
         
         !evaluate the action to start
         call eval_action(sys,pimc,Beads,act)
 
         acctot=0.0
         moveacctot=0.0
+        open(unit=999,file=trim(OUT_DIR)//trim(pimc%start),status='unknown',action='write',iostat=ioerror,position='append')
+        if(ioerror.ne.0) stop 'tout file io error'
+        open(newunit=kineticoutput,file=trim(OUT_DIR)//'kinetic',status='unknown',action='write',iostat=ioerror,position='append')
+        if(ioerror.ne.0) stop 'kineticoutput file io error'
+        open(newunit=potentialoutput,file=trim(OUT_DIR)//'potential',status='unknown',action='write',iostat=ioerror,position='append')
+        if(ioerror.ne.0) stop 'potentialoutput file io error'
+
  
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
@@ -311,13 +319,13 @@ module path_integral_monte_carlo
 #ifdef FREE_ENERGY
                             if(pimc%doSample==1) then
 #endif
-                                do i=1,pimc%NumBeads
-                                    if(pimc%NumBeads*3==pimc%NumBeadsEff) then
-                                        call updateBinning(bins,params,Beads(3*(i-1)+1)%x,Beads(i)%r)
-                                    else
-                                        call updateBinning(bins,params,Beads(i)%x,Beads(i)%r)
-                                    endif
-                                enddo
+                                !do i=1,pimc%NumBeads
+                                !    if(pimc%NumBeads*3==pimc%NumBeadsEff) then
+                                !        call updateBinning(bins,params,Beads(3*(i-1)+1)%x,Beads(i)%r)
+                                !    else
+                                !        call updateBinning(bins,params,Beads(i)%x,Beads(i)%r)
+                                !    endif
+                                !enddo
                               
                                ! call update energy(sys,pimc,Beads,results) see "module estimator_class" 
                                 call update(sys,pimc,Beads,est)
@@ -378,7 +386,7 @@ module path_integral_monte_carlo
                 endif
                 if(pimc%doSample==1) then
 #endif
-                call update_block(pimc,est)
+                call update_block(pimc,est,potentialoutput,kineticoutput)
 
 #ifdef FREE_ENERGY
                 endif
@@ -389,7 +397,7 @@ module path_integral_monte_carlo
             if (pimc%WritingCheckpoint =='y') then 
                open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
                 rewind(unit=599)
-               if (ioerror.eq.0) stop 'checkpoint file io error'
+               if (ioerror.ne.0) stop 'checkpoint file io error' ! .EQ. 0 means no error
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
                ! Save the beads configuration at the end of each block
@@ -409,8 +417,6 @@ module path_integral_monte_carlo
             
             ! writing beads configurations when MC becomes equilibrated
             if (equil == .False.) then
-               open(unit=999,file=trim(OUT_DIR)//trim(pimc%start),status='unknown',action='write',iostat=ioerror,position='append')
-               if(ioerror.eq.0) stop 'tout file io error'
                
                do i=1,pimc%NumBeadsEff
                   call writeTOUT(Beads(i)%x, out_dir, pimc%start,sys%natom,sys%dimen)
@@ -436,6 +442,8 @@ module path_integral_monte_carlo
         ! close checkpoint
         call close_file(599)
         call close_file(999)
+        call close_file(potentialoutput)
+        call close_file(kineticoutput)
 
         if(pimc%blocking=='y') then
           call blk_count(pimc%blk)
