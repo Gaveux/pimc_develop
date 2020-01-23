@@ -112,12 +112,14 @@ module Estimator_class
 
         end subroutine estimator_step
 
-        subroutine estimator_block(pimc,this,potentialOut,kineticOut)
+        subroutine estimator_block(pimc,this,potentialOut,kineticOut,currentIter)
             type (estimator), intent(inout) :: this
             type (pimc_par), intent(in) :: pimc
 
             integer :: i
             integer, intent(in) :: kineticOut, potentialOut
+            integer, intent(in) :: currentIter
+            integer :: move
 
          
 
@@ -139,11 +141,15 @@ module Estimator_class
                 !endif
             enddo
             
+            move=100
+            if (mod(currentIter,move).eq.0) then
+            
             !if (pimc%blocking == 'y' ) then
             !call print_block(pimc,this%vars(1))
-            call print_block(pimc,this%vars(4),kineticOut)
-            call print_block(pimc,this%vars(7),potentialOut)
+              call print_block(pimc,this%vars(4),kineticOut)
+              call print_block(pimc,this%vars(7),potentialOut)
             !endif
+            endif
 
             do i=1,9
                call reset(this%vars(i))

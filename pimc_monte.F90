@@ -386,7 +386,7 @@ module path_integral_monte_carlo
                 endif
                 if(pimc%doSample==1) then
 #endif
-                call update_block(pimc,est,potentialoutput,kineticoutput)
+                call update_block(pimc,est,potentialoutput,kineticoutput,iblock)
 
 #ifdef FREE_ENERGY
                 endif
@@ -417,10 +417,12 @@ module path_integral_monte_carlo
             
             ! writing beads configurations when MC becomes equilibrated
             if (equil == .False.) then
+              if (mod(iblock,100).eq.0) then
                
-               do i=1,pimc%NumBeadsEff
-                  call writeTOUT(Beads(i)%x, out_dir, pimc%start,sys%natom,sys%dimen)
-               enddo
+                 do i=1,pimc%NumBeadsEff
+                    call writeTOUT(Beads(i)%x, out_dir, pimc%start,sys%natom,sys%dimen)
+                 enddo
+               endif
             endif
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
