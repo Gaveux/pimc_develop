@@ -221,6 +221,8 @@ module path_integral_monte_carlo
         if(ioerror.ne.0) stop 'kineticoutput file io error'
         open(newunit=potentialoutput,file=trim(OUT_DIR)//'potential',status='unknown',action='write',iostat=ioerror,position='append')
         if(ioerror.ne.0) stop 'potentialoutput file io error'
+        open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
+        if (ioerror.ne.0) stop 'checkpoint file io error' ! .EQ. 0 means no error
 
  
         !Start the main monte carlo loop
@@ -392,12 +394,12 @@ module path_integral_monte_carlo
                 endif
 #endif
             endif
+            
+          if (mod(iblock,100).eq.0) then
             pimc%NumBlocksLeft = pimc%NumBlocks - iblock
             pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
             if (pimc%WritingCheckpoint =='y') then 
-               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
                 rewind(unit=599)
-               if (ioerror.ne.0) stop 'checkpoint file io error' ! .EQ. 0 means no error
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
                ! Save the beads configuration at the end of each block
@@ -417,13 +419,12 @@ module path_integral_monte_carlo
             
             ! writing beads configurations when MC becomes equilibrated
             if (equil == .False.) then
-              if (mod(iblock,100).eq.0) then
                
                  do i=1,pimc%NumBeadsEff
                     call writeTOUT(Beads(i)%x, out_dir, pimc%start,sys%natom,sys%dimen)
                  enddo
-               endif
             endif
+          endif
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
