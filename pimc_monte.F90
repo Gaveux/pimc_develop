@@ -377,10 +377,10 @@ module path_integral_monte_carlo
                 moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
                 moveacctot = moveacctot + moveacc
             endif
-            !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
+            write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
          
             if(pimc%move%move_type.eq.1) then
-               ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
+                write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
             endif
 
             if(pimc%Sample==1) then
@@ -421,9 +421,6 @@ module path_integral_monte_carlo
                    write(599,*) est
                    write(599,*) 'block: ', iblock
                    write(599,*) pimc%NumBlocksLeft, '0'   
-                   !close(unit=599)
-                !elseif (pimc%WritingCheckpoint == 'n') then
-                   !print *, 'Sorry! But you did not ask ~'
                 endif
 
 #ifdef FREE_ENERGY

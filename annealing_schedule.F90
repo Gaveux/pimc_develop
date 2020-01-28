@@ -13,7 +13,7 @@ module annealing_schedule
 
     integer :: iblock
     real(kind=8) :: totalIteration, currentIteration, move
-    real(kind=8) :: min_AtomDisp
+    real(kind=8) :: min_AtomDisp, updateFreq
     
      currentIteration=dble(iblock*pimc%StepsPerBlock)
      totalIteration=dble(pimc%NumBlocks*pimc%StepsPerBlock)
@@ -22,8 +22,7 @@ module annealing_schedule
      AtomDisp = pimc%move%AtomDisp
      else
      !determine at what iteration k updates
-        move = 0.1d0*totalIteration
-        
+        move = pimc%move%updateFreq*totalIteration
 
         if (mod(currentIteration,move).eq.0) then
            AtomDisp = pimc%move%AtomDisp*(1.0 - currentIteration/totalIteration)**4.0
