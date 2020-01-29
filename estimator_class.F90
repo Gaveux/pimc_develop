@@ -134,11 +134,14 @@ module Estimator_class
 
                 !if (pimc%blocking == 'n') then
                 !   call print_block(pimc,this%vars(i))
+                !    call equilibrated_sum(this%vars(i))
                 !endif
             enddo
             
             !if (pimc%blocking == 'y' ) then
             !call print_block(pimc,this%vars(1))
+            ! summing up averages per block
+            call equilibrated_sum(this%vars(i))
             !endif
 
             do i=1,9

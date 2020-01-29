@@ -7,7 +7,7 @@ module vars_class
     !Stores the variables required for averaging a quantity over a simulation run
     type vars
         real(kind=8) :: mean_block, var_block, mean_tot, var_tot, curr
-        real(kind=8) :: delta, diffsqr
+        real(kind=8) :: delta, diffsqr, equil_sum
         integer(kind=4) :: n_block, n_tot
 
     end type vars
@@ -33,6 +33,10 @@ module vars_class
         module procedure print_var_end
     end interface
 
+    interface equilibrated_sum
+        module procedure update_equilibrated_sum
+    end interface
+
     interface reset
         module procedure reset_block_var
     end interface 
@@ -49,6 +53,7 @@ module vars_class
             this%curr=0.0
             this%n_block=0
             this%n_tot=0
+            this%equil_sum=0.0
 
             return
         end subroutine init_vars
@@ -62,7 +67,7 @@ module vars_class
 !            print *, 'curr', this%curr, 'mean_block', this%mean_block
             this%delta=this%curr-this%mean_block
             this%mean_block=this%mean_block+this%delta/dble(this%n_block)
-            this%diffsqr=this%diffsqr+this%delta*(this%curr-this%mean_block)
+            this%diffsqr=this%diffsqr+(this%curr-this%mean_block)**2
 
             !print *, 'n_block = ', this%n_block
 
@@ -109,7 +114,6 @@ module vars_class
                     !Set the total variance to the block variance
                     this%var_tot=this%var_block
                 !    print *, 'calculated via else'
-                    
                     !Update the mean for the total simulation
                     this%mean_tot=(this%mean_tot*dble(this%n_tot)+this%mean_block*dble(this%n_block))&
                     &               /dble(this%n_block+this%n_tot)
@@ -159,6 +163,15 @@ module vars_class
             !this%diffsqr=0.0
         end subroutine print_var_block
 
+        subroutine update_equilibrated_sum(this)
+            type (vars), intent(inout) :: this
+            real(kind=8) :: nblk =0.0
+            
+            nblk=nblk + 1.0
+           
+            this%equil_sum = this%equil_sum + this%mean_block 
+
+        end subroutine update_equilibrated_sum
 
 
 
