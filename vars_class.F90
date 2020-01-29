@@ -7,7 +7,7 @@ module vars_class
     !Stores the variables required for averaging a quantity over a simulation run
     type vars
         real(kind=8) :: mean_block, var_block, mean_tot, var_tot, curr
-        real(kind=8) :: delta, diffsqr, equil_sum
+        real(kind=8) :: delta, diffsqr, equil_sum, equil_move_avg
         integer(kind=4) :: n_block, n_tot
 
     end type vars
@@ -54,6 +54,7 @@ module vars_class
             this%n_block=0
             this%n_tot=0
             this%equil_sum=0.0
+            this%equil_move_avg = 0.0
 
             return
         end subroutine init_vars
@@ -80,6 +81,7 @@ module vars_class
             this%var_block=0.0
             this%mean_block=0.0
             this%diffsqr=0.0
+            this%equil_move_avg = 0.0
 
         end subroutine reset_block_var
 
@@ -165,11 +167,14 @@ module vars_class
 
         subroutine update_equilibrated_sum(this)
             type (vars), intent(inout) :: this
-            real(kind=8) :: nblk =0.0
+            real(kind=8) :: nblk = 0.0
             
             nblk=nblk + 1.0
            
             this%equil_sum = this%equil_sum + this%mean_block 
+            this%equil_move_avg = this%equil_sum/nblk
+           
+          !print *, this%equil_move_avg
 
         end subroutine update_equilibrated_sum
 
