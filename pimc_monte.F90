@@ -214,6 +214,10 @@ module path_integral_monte_carlo
 
         acctot=0.0
         moveacctot=0.0
+        if (pimc%WritingCheckpoint == 'y') then
+             open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
+             if (ioerror.ne.0) stop 'checkpoint file io error'
+        endif
  
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
@@ -387,9 +391,7 @@ module path_integral_monte_carlo
             pimc%NumBlocksLeft = pimc%NumBlocks - iblock
             pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
             if (pimc%WritingCheckpoint =='y') then 
-               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
                rewind(unit=599)
-               !if (ioerror.eq.0) stop 'checkpoint file io error'
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
                ! Save the beads configuration at the end of each block
