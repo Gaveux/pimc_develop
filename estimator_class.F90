@@ -120,15 +120,15 @@ module Estimator_class
          
 
             do i=1,9
-                if(i.eq.1) then
+                !if(i.eq.1) then
                     !write(*,*) 'Energy'
                 
-                else if(i.eq.4) then
+                !else if(i.eq.4) then
                     !write(*,*) 'Kinetic Energy'
                 
-                else if (i.eq.7) then
+                !else if (i.eq.7) then
                     !write(*,*) 'Potential Energy'
-                endif
+                !endif
                 
                 call update_block(this%vars(i))
 
@@ -139,7 +139,7 @@ module Estimator_class
             enddo
             
             !if (pimc%blocking == 'y' ) then
-            !call print_block(pimc,this%vars(1))
+            call print_block(pimc,this%vars(1))
             ! summing up averages per block
             call equilibrated_sum(this%vars(1))
             !endif

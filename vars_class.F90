@@ -68,6 +68,7 @@ module vars_class
 !            print *, 'curr', this%curr, 'mean_block', this%mean_block
             this%delta=this%curr-this%mean_block
             this%mean_block=this%mean_block+this%delta/dble(this%n_block)
+            
             this%diffsqr=this%diffsqr+(this%curr-this%mean_block)**2
 
             !print *, 'n_block = ', this%n_block
@@ -90,16 +91,9 @@ module vars_class
             !print *, 'this%n_block = ', this%n_block
             !If there was more than one step in the block
             if(this%n_block.gt.1) then
-                !Calculate the block variance given it is well defined
+               ! !Calculate the block variance given it is well defined
                 this%var_block=this%diffsqr/dble(this%n_block-1)
-               ! print *, 'diffsqr = ', this%diffsqr
-               ! print *, 'this%n_block =', this%n_block
-               ! print *, 'this%var_block = ', this%var_block
-               ! print *, 'this%n_tot = ', this%n_tot
-               ! print *, 'mean_block = ', this%mean_block
-               ! print *, 'mean_tot = ', this%mean_tot
-               ! print *, 'var_tot = ', this%var_tot
- 
+
                 !If we have previously had a block of length greater than one
                 if(this%n_tot.gt.1) then
             
@@ -149,7 +143,7 @@ module vars_class
                
               if(this%n_block.ne.0) then
                 if (pimc%blocking == 'n') then
-                   write(*,*) this%mean_block, '+/-', sqrt(this%var_block/this%n_block)!, &
+                   write(*,*) 2625.5*this%mean_block, '+/-', 2625.5*sqrt(this%var_block/this%n_block)!, &
                    !&           'Block Size: ', this%n_block
                 else
                    open(unit=199,file=trim(pimc%blk),status='unknown',action='write',position='append') 
@@ -174,7 +168,7 @@ module vars_class
             this%equil_sum = this%equil_sum + this%mean_block 
             this%equil_move_avg = this%equil_sum/nblk
            
-          !print *, this%equil_move_avg
+            !print *, this%equil_move_avg
 
         end subroutine update_equilibrated_sum
 
@@ -183,7 +177,7 @@ module vars_class
         subroutine print_var_end(this)
             type (vars), intent(in) :: this
             if(this%n_tot.ne.0) then
-            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
+            write(*,*) 2625.5*this%mean_tot, '+/-', 2625.5*sqrt(this%var_tot/this%n_tot), &
             &           'Averages: ', this%n_tot
             endif
         end subroutine print_var_end
