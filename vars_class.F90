@@ -168,7 +168,7 @@ module vars_class
             this%equil_sum = this%equil_sum + this%mean_block 
             this%equil_move_avg = this%equil_sum/nblk
            
-            !print *, this%equil_move_avg
+          !print *, this%equil_move_avg
 
         end subroutine update_equilibrated_sum
 
