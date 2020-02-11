@@ -226,15 +226,6 @@ module path_integral_monte_carlo
                 equil=.FALSE.
             endif
 
-            ! reducing AtomDisp based on annealing schedule
-            if (first_time) then
-            call annealing_condition(pimc,AtomDisp,iblock,.TRUE.)
-            first_time = .FALSE.
-            else
-            call annealing_condition(pimc,AtomDisp,iblock,.False.)
-            endif
-            pimc%move%AtomDisp = AtomDisp
-            print *,  pimc%move%AtomDisp
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
@@ -245,6 +236,17 @@ module path_integral_monte_carlo
                         if(imove.eq.num_moves) then
                             atom_move=.true.
                         endif
+
+              ! introduce a larger than bondlength atomic displacement every
+              ! given number of blocks till equilibration complete
+              if (atom_move .and. equil) then
+                  call annealing_condition(pimc,AtomDisp,iblock,iter)
+              endif
+              !pimc%move%AtomDisp = AtomDisp
+              !print *,  pimc%move%AtomDisp
+
+
+
                         do ibead=1,pimc%NumBeadsEff+1
                             call copy(Beads(ibead),OldBeads(ibead))
                         enddo
@@ -263,7 +265,7 @@ module path_integral_monte_carlo
                             last_moved = pimc%NumBeadsEff
                         endif
 #endif
-                        do i=first_moved,last_moved 
+                        do i=first_moved,last_moved ! see the definition in staging_move subroutine 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
                             !MSI potential energy surfaces
