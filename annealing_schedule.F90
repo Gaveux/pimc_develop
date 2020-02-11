@@ -4,19 +4,19 @@ module annealing_schedule
 
   contains
 
-  subroutine annealing_condition(pimc,AtomDisp,iblock,iter)
+  subroutine annealing_condition(pimc,AtomDisp,iblock)
     implicit none
   
     type (pimc_par) :: pimc
     real(kind=8), intent(out) :: AtomDisp
     logical :: first_time
 
-    integer :: iblock, iter
+    integer :: iblock
     real(kind=8) :: totalIteration, currentIteration, move
     real(kind=8) :: min_AtomDisp, updateFreq
     
-     currentIteration=dble(iblock*iter)
-     totalIteration=dble(pimc%NumBlocks*pimc%StepsPerBlock)
+     currentIteration=dble(iblock)
+     totalIteration=dble(pimc%NumBlocks-pimc%BlocksToEquil)
 
      !if (first_time.eq..TRUE.) then
      !AtomDisp = pimc%move%AtomDisp

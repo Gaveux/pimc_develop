@@ -151,7 +151,7 @@ module path_integral_monte_carlo
         logical :: atom_move
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
-        real(kind=8) ::AtomDisp
+        real(kind=8) ::AtomDisp, og_AtomDisp
 
         atom_pass=0
         !determine the number of moves that need to be made per monte carlo pass
@@ -217,6 +217,7 @@ module path_integral_monte_carlo
 
         acctot=0.0
         moveacctot=0.0
+        og_AtomDisp = pimc%move%AtomDisp
  
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
@@ -225,6 +226,22 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE.
             endif
+
+              ! introduce a larger than bondlength atomic displacement every
+              ! given number of blocks till equilibration complete
+              pimc%move%AtomDisp = og_AtomDisp
+              if (equil) then
+                  !call annealing_condition(pimc,AtomDisp,iblock)
+                if (mod(dble(iblock),dble(pimc%NumBlocks-pimc%BlocksToEquil)*pimc%move%updateFreq).eq.0) then
+                    pimc%move%AtomDisp = pimc%move%LargeAtomDisp
+                else
+                    pimc%move%AtomDisp = og_AtomDisp
+                endif
+              endif
+    
+              !pimc%move%AtomDisp = AtomDisp
+              print *,  pimc%move%AtomDisp
+
 
 
             B_init = pimc%Beta
@@ -236,14 +253,6 @@ module path_integral_monte_carlo
                         if(imove.eq.num_moves) then
                             atom_move=.true.
                         endif
-
-              ! introduce a larger than bondlength atomic displacement every
-              ! given number of blocks till equilibration complete
-              if (atom_move .and. equil) then
-                  call annealing_condition(pimc,AtomDisp,iblock,iter)
-              endif
-              !pimc%move%AtomDisp = AtomDisp
-              !print *,  pimc%move%AtomDisp
 
 
 
