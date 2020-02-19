@@ -1,13 +1,14 @@
 
 interface 
-  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
+  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   use molecule_specs
   use interpolation
 
   type (interp_params), intent(in) :: interp
   type (molsysdat), intent(in) :: sys
   type (pot_data_point), dimension(:), pointer :: pot
-  real(kind=8), dimension(:), intent(inout) :: RawWeight
+  real(kind=8), dimension(:), intent(out) :: RawWeight
+  real(kind=8), dimension(:), intent(out) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
 

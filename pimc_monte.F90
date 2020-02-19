@@ -260,6 +260,7 @@ module path_integral_monte_carlo
 #if POT == 0
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
+                            call exit(0)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
