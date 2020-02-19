@@ -22,10 +22,14 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     ! size of array to the correct size w.r.t. each iteration within the dynamical array
     !real(kind=8), dimension(neigh%numInner) :: Raw
     real(kind=8), dimension(sys%nbond,size(Weight)) :: DWeight
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: DRawWeight
     real(kind=8), dimension(size(Weight),sys%nbond) :: dTaydR
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: D2RawWeight
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: D2Weight
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
-    real(kind=8), dimension(sys%nbond) :: SumDWeight
-    real(kind=8) :: totsum, energy, temp
+    real(kind=8), dimension(sys%nbond) :: SumDRawWeight
+    real(kind=8), dimension(sys%nbond) :: SumD2RawWeight
+    real(kind=8) :: totsum, energy, temp, invTotsum
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -43,8 +47,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     !!$OMP END PARALLEL DO 
       
     totsum = sum(Raw(1:neigh%numInner))
+    invTotsum = 1.0/totsum
     Weight = Raw/totsum
-    print *, Weight
    
     !---------------------------------------------------
     !  Calculate the derivatives of the weights
@@ -57,16 +61,22 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     do k=1,neigh%numInner
         temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
         do i=1,sys%nbond
-            DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+            DRawWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+            D2RawWeight(i,k) = temp*(2.0*pot(neigh%inner(k))%r(i)*r(i)**3 &
+            - 3.0*r(i)**4) 
+            D2RawWeight(i,k) = D2RawWeight(i,k) + temp*RawWeightTemp(k) &
+            *2.0*(interp%ipow+1.0)*(r(i)**3 - pot(neigh%inner(k))%r(i)*r(i)**2)**2
         enddo
     enddo
     !!$OMP END PARALLEL DO
     
-    SumDWeight = 0.0
+    SumDRawWeight = 0.0
+    SumD2RawWeight = 0.0
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(SumDWeight,DWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
-            SumDWeight(i) = SumDWeight(i) + DWeight(i,k)
+            SumDRawWeight(i) = SumDRawWeight(i) + DRawWeight(i,k)
+            SumD2RawWeight(i) = SumD2RawWeight(i) + D2RawWeight(i,k)
         enddo
     enddo
     !!$OMP END PARALLE DO   
@@ -75,9 +85,12 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,Weight,SumDWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
-            DWeight(i,k) = DWeight(i,k) - Weight(k)*SumDWeight(i)
+            DWeight(i,k) = DRawWeight(i,k) - Weight(k)*SumDRawWeight(i)
+            D2Weight(i,k) = 2.0*(Weight(k)*SumDRawWeight(i)**2 - DRawWeight(i,k)*SumDRawWeight(i)) &
+                    + invTotsum*(D2RawWeight(i,k)-Weight(k)*SumD2RawWeight(i))
         enddo
     enddo
+
     !!$OMP END PARALLEL DO
     !!$OMP END PARALLEL
     !---------------------------------------------------
