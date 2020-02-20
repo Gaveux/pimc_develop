@@ -24,6 +24,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(sys%nbond,size(Weight)) :: DWeight
     real(kind=8), dimension(sys%nbond,size(Weight)) :: DRawWeight
     real(kind=8), dimension(size(Weight),sys%nbond) :: dTaydR
+    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2
     real(kind=8), dimension(sys%nbond,size(Weight)) :: D2RawWeight
     real(kind=8), dimension(sys%nbond,size(Weight)) :: D2Weight
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
@@ -35,6 +36,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(interp%ndata) :: Tay
     !Stores the zeta coordinates of the system
     real(kind=8), dimension(sys%nint,interp%ndata) :: z
+    real(kind=8), dimension(sys%nint,interp%ndata) :: rdzdr
     integer :: i,j,k
     
     !---------------------------------------------------
@@ -101,9 +103,11 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         do j = 1,sys%nbond
             do i = 1,sys%nint
                 z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
+                !rdzdr(i,k) = rdzdr(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)**2
             enddo
         enddo
     enddo
+    print *, z
     
     do k=1,neigh%numInner
         do i=1,sys%nint
@@ -141,17 +145,22 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         enddo
     enddo
    
-    ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
+    ! derivative of the Taylor polynomial w.r.t r^-1
     do j=1,sys%nbond
         temp = -r(j)**2
         do k=1,neigh%numInner
             dTaydR(k,j) = 0.0
+            d2TaydR2(k,j) = 0.0
             do i=1,sys%nint
+            print *, pot(neigh%inner(k))%ut(i,j)
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
+                !d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%v2(i)*rdzdr(i,k)**2
             enddo
             dTaydR(k,j) = dTaydR(k,j)*temp
+            !d2TaydR2(k,j) = d2TaydR2(k,j) - 2.0*r(j)*dTaydR(k,j)
         enddo
     enddo
+    !print *,  d2TaydR2
    
     ! gradient of the energy
     dVdR = 0.0
