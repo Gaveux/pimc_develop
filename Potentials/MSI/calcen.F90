@@ -16,6 +16,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(:), intent(in) :: r
     real(kind=8), intent(out) :: V
     real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
+    real(kind=8), dimension(sys%nbond)  :: ddr_Fsqr
 
     real(kind=8), dimension(size(Weight)) :: Raw
     ! by defining the dimension of Raw to neigh%numInner, this restricts the
@@ -169,6 +170,16 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
             dVdR(i) = dVdR(i) + Tay(k)*DWeight(i,k) + Weight(k)*dTaydR(k,i)
         enddo
     enddo
+    ddr_Fsqr = 0.0
+    do k=1,neigh%numInner
+        do i=1,sys%nbond
+            ddr_Fsqr(i) = ddr_Fsqr(i) + 2.0*dVdR(i)*(Tay(k)*D2Weight(i,k)+Weight(k)*d2TaydR2(k,i)+2.0*dTaydR(k,i)*DWeight(i,k))
+            !ddr_Fsqr(i) = ddr_Fsqr(i) + 2.0*dVdR(i)*(Tay(k)*D2Weight(i,k)+Weight(k)+2.0*dTaydR(k,i)*DWeight(i,k))
+        enddo
+    enddo
+    print *, dVdR
+    print *,''
+    print *, ddr_Fsqr
     
     V = energy 
   return
