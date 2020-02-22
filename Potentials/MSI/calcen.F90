@@ -37,7 +37,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     !Stores the zeta coordinates of the system
     real(kind=8), dimension(sys%nint,interp%ndata) :: z
     real(kind=8), dimension(sys%nint,interp%ndata) :: rdzdr
-    integer :: i,j,k
+    integer :: i,j,k,l
     
     !---------------------------------------------------
     !  Calculate the Weights 
@@ -107,7 +107,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
             enddo
         enddo
     enddo
-    print *, z
     
     do k=1,neigh%numInner
         do i=1,sys%nint
@@ -152,15 +151,16 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
             dTaydR(k,j) = 0.0
             d2TaydR2(k,j) = 0.0
             do i=1,sys%nint
-            print *, pot(neigh%inner(k))%ut(i,j)
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
-                !d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%v2(i)*rdzdr(i,k)**2
+                do l=1,sys%nint
+                d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%ut(l,j)
+                enddo
+                d2TaydR2(k,j) = d2TaydR2(k,j)*pot(neigh%inner(k))%ut(i,j)*pot(neigh%inner(k))%v2(i)
             enddo
             dTaydR(k,j) = dTaydR(k,j)*temp
-            !d2TaydR2(k,j) = d2TaydR2(k,j) - 2.0*r(j)*dTaydR(k,j)
+            d2TaydR2(k,j) = d2TaydR2(k,j)*temp**2 - 2.0*r(j)*dTaydR(k,j)
         enddo
     enddo
-    !print *,  d2TaydR2
    
     ! gradient of the energy
     dVdR = 0.0
