@@ -31,7 +31,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
     real(kind=8), dimension(sys%nbond) :: SumDRawWeight
     real(kind=8), dimension(sys%nbond) :: SumD2RawWeight
-    real(kind=8) :: totsum, energy, temp, invTotsum
+    real(kind=8) :: totsum, energy, temp, invTotsum, temp2
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -134,7 +134,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     enddo
      
     !----------------------------------------------------------
-    !  Calculate the gradient of the energy (w.r.t internals)
+    !  Calculate the gradient and normal of the energy (w.r.t internals)
     !----------------------------------------------------------
      
     ! derivative of Taylor polynomial in local internals
@@ -144,22 +144,29 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
             pot(neigh%inner(k))%v1(i)
         enddo
     enddo
+
+    ! ut(i,j) sum in nint
+    do j=1,sys%nbond
+        do k=1,neigh%numInner
+        d2TaydR2(k,j) = 0.0
+          do i=1,sys%nint
+             d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%ut(i,j)
+          enddo
+        enddo
+    enddo
    
     ! derivative of the Taylor polynomial w.r.t r^-1
     do j=1,sys%nbond
         temp = -r(j)**2
+        temp2 = r(j)**3
         do k=1,neigh%numInner
             dTaydR(k,j) = 0.0
-            d2TaydR2(k,j) = 0.0
             do i=1,sys%nint
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
-                do l=1,sys%nint
-                d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%ut(l,j)
-                enddo
-                d2TaydR2(k,j) = d2TaydR2(k,j)*pot(neigh%inner(k))%ut(i,j)*pot(neigh%inner(k))%v2(i)
+                d2TaydR2(k,j) = d2TaydR2(k,j)*(pot(neigh%inner(k))%ut(i,j)*pot(neigh%inner(k))%v2(i)*r(j) + 2.0*DTay(i,k))
             enddo
             dTaydR(k,j) = dTaydR(k,j)*temp
-            d2TaydR2(k,j) = d2TaydR2(k,j)*temp**2 - 2.0*r(j)*dTaydR(k,j)
+            d2TaydR2(k,j) = d2TaydR2(k,j)*temp2
         enddo
     enddo
    
