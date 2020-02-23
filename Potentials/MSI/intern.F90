@@ -6,6 +6,7 @@ subroutine intern(sys,x,r,dr)
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
+    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: d2r
 
     integer :: i,j
 
@@ -14,16 +15,23 @@ subroutine intern(sys,x,r,dr)
         do j=1,sys%dimen
             r(i) = r(i) + (x(j,sys%mb(i))-x(j,sys%nb(i)))**2
         enddo
-        r(i) = sqrt(r(i))
+        r(i) = 1.0/sqrt(r(i))
     enddo
 
     dr=0.0d0
     
     do j=1,sys%dimen
         do i=1,sys%nbond
-            dr(j,sys%mb(i),i)=(x(j,sys%mb(i))-x(j,sys%nb(i)))/r(i)
+            dr(j,sys%mb(i),i)=(x(j,sys%mb(i))-x(j,sys%nb(i)))*r(i)
             dr(j,sys%nb(i),i)=-dr(j,sys%mb(i),i)
         enddo
     enddo
-    r=1/r
+
+    do j=1,sys%dimen
+       do i=1,sys%nbond
+           d2r(j,sys%mb(i),i) = -r(i)*dr(j,sys%mb(i),i)**2 + r(i)
+           d2r(j,sys%nb(i),i) = d2r(j,sys%mb(i),i)
+       enddo
+    enddo
+    !r=1/r
 end subroutine intern

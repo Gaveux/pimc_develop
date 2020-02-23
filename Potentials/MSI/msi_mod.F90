@@ -49,6 +49,8 @@
             !Dummy variables for Weight, RawWeightTemp is Weight^-p
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
+            !derivative of |F|^2 w.r.t. inverse bonde lengths
+            real(kind=8), dimension(param%sys%nbond) :: ddr_Fsqr
 
             
             integer :: j,k
@@ -66,15 +68,16 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,ddr_Fsqr)
             !endif
 
             V = V - param%interp%vmin
-            do j=1,param%sys%natom
-                do k=1,param%sys%dimen
-                    dV(k,j) = 0.d0
-                enddo
-            enddo
+            !do j=1,param%sys%natom
+            !    do k=1,param%sys%dimen
+            !        dV(k,j) = 0.d0
+            !    enddo
+            !enddo
+           dV = 0.0
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
