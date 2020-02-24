@@ -662,13 +662,14 @@ module Estimator_class
             type (pimc_par), intent(in) :: pimc
             type (pimc_particle), dimension(:), pointer :: Beads
             real(kind=8), dimension(3), intent(out) :: results
+            real(kind=8), dimension(sys%dimen,sys%natom) :: cv
 
             real(kind=8) :: e, ke, pe, frc, dsq, tdsq, f2, tempf2
             real(kind=8) :: e_sc, ke_sc, pe_sc, frc_sc
             real(kind=8) :: temp_sc_frc, tempf2_odd, tempf2_even
-            real(kind=8) :: tmp_frc
-            real(kind=8) :: pe_odd, pe_even
-            real(kind=8) :: n2b
+            real(kind=8) :: tmp_frc, r_dvdr_even, r_dvdr_odd, r_dvdr
+            real(kind=8) :: pe_odd, pe_even, frc2_sc, temp_sc_frc2
+            real(kind=8) :: n2b, tempf2_odd2, tempf2_even2, tmp_frc2
             
             
             integer :: i,j,k
@@ -679,90 +680,80 @@ module Estimator_class
             pe_sc = 0.0
             frc = 0.0
             frc_sc =0.0
+            frc2_sc = 0.0
 
             n2b=0.5*dble(sys%dimen)*dble(sys%natom)*pimc%invBeta
+
+            ! compute the centroid
+            do i=1,sys%natom
+                do j=1,sys%dimen
+                    cv(j,i)=0.0
+                    do k=1,pimc%NumBeads
+                        cv(j,i)=cv(j,i)+Beads(k)%x(j,i)
+                    enddo
+                    cv(j,i)=cv(j,i)*pimc%invNumBeads
+                enddo
+            enddo
+
             
 ! kinetic energy first this is identical the takahashi-imada ke 
 
-            do i=1,pimc%NumBeads
-            
-                dsq = 0.0
-    
+            do i=1,pimc%NumBeads,2
+                r_dvdr = 0.0
                 do j=1,sys%natom
-                    tdsq=0.0
+                    r_dvdr_even=0.0
+                    r_dvdr_odd=0.0
                     do k=1,sys%dimen
-                        tdsq = tdsq + (Beads(i)%x(k,j)-Beads(i+1)%x(k,j))**2
-
+                        r_dvdr_even = r_dvdr_even + (Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%dVdx(k,j)
+                        r_dvdr_odd = r_dvdr_odd + (Beads(i)%x(k,j)-cv(k,j))*Beads(i)%dVdx(k,j)
                     enddo
-                    dsq = dsq + tdsq*sys%mass(j)
-
+                    r_dvdr = r_dvdr + (2.0/3.0)*r_dvdr_even + (4.0/3.0)*r_dvdr_odd
                 enddo
-                
-                ke = ke + dsq
-                ke_sc = ke_sc + dsq
+                ke_sc = ke_sc + r_dvdr
 
             enddo
 
-            ke = (ke*pimc%NumBeads) * (0.5*pimc%invBeta**2)
-            ke_sc = (ke_sc*pimc%NumBeads) * (0.5*pimc%invBeta**2)
+            ke_sc = ke_sc*pimc%invNumBeads*0.5
 
 
 ! potential energy and the forces for the suzuki-chin action
 
             do i=1,pimc%NumBeads,2
-            
                 temp_sc_frc = 0.0
+                temp_sc_frc2 = 0.0
                 pe_odd = 0.0
                 pe_even = 0.0
-    
-! for the suzuki-chin we need some temporary variables
-
                 do j=1,sys%natom
-
                     tempf2_odd = 0.0
+                    tempf2_odd2 = 0.0
                     tempf2_even = 0.0
+                    tempf2_even2 = 0.0
                     tmp_frc = 0.0
-
-
+                    tmp_frc2 = 0.0
                     do k=1,sys%dimen
-
-! two force terms in suzuki-chin action, nb "odd" is "i" and "even" is "i+1"
-
                         tempf2_odd = pimc%act%alpha*Beads(i)%dVdx(k,j)**2
+                        tempf2_odd2 = pimc%act%alpha*(Beads(i)%x(k,j)-cv(k,j))*Beads(i)%dFsqr(k,j)
                         tempf2_even= (1.0-pimc%act%alpha)*Beads(i+1)%dVdx(k,j)**2
+                        tempf2_even2 = (1.0-pimc%act%alpha)*(Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%dFsqr(k,j)
                         tmp_frc = tmp_frc + tempf2_odd + tempf2_even
-
+                        tmp_frc2 = tmp_frc + 0.5*(tempf2_odd2+tempf2_even2)
                     enddo
-
-! for suzuki-chin action
-
                     temp_sc_frc = temp_sc_frc + tmp_frc/sys%mass(j)
-
+                    temp_sc_frc2 = temp_sc_frc2 + tmp_frc2/sys%mass(j)
                 enddo
-                
-! two potential terms in suzuki-chin action, nb "odd" is "i" and "even" is "i+1"
-
                 pe_odd = 2.0/3.0*Beads(i)%Vcurr
                 pe_even = 4.0/3.0*Beads(i+1)%Vcurr
                 pe_sc = pe_sc + pe_odd + pe_even
-
-! suzuki-chin action term
-
                 frc_sc = frc_sc + temp_sc_frc
-
+                frc2_sc = frc2_sc + temp_sc_frc2
             enddo
 
-! finished loop for suzuki-chin forces and potential
-
-! suzuki-chin action term
-
             frc_sc = frc_sc*pimc%Beta**2*(pimc%invNumBeads**3)/(9.0)
-
-! suzuki-chin action terms
+            frc2_sc = (frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
 
             pe_sc = pe_sc*pimc%invNumBeads
             pe_sc=pe_sc+2.0*frc_sc
-            ke_sc=n2b-ke_sc+frc_sc
+            ke_sc=n2b+ke_sc+frc2_sc
 
             e_sc=ke_sc+pe_sc
             
