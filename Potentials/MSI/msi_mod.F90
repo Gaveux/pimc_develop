@@ -78,7 +78,8 @@
             !        dV(k,j) = 0.d0
             !    enddo
             !enddo
-           dV = 0.0
+            dV = 0.0
+            dFsqr = 0.0
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
