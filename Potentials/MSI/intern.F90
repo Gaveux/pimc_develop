@@ -6,7 +6,7 @@ subroutine intern(sys,x,r,dr)
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
-    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: d2r
+    !real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: d2r
 
     integer :: i,j
 
@@ -27,11 +27,11 @@ subroutine intern(sys,x,r,dr)
         enddo
     enddo
 
-    do j=1,sys%dimen
-       do i=1,sys%nbond
-           d2r(j,sys%mb(i),i) = -r(i)*dr(j,sys%mb(i),i)**2 + r(i)
-           d2r(j,sys%nb(i),i) = d2r(j,sys%mb(i),i)
-       enddo
-    enddo
+    !do j=1,sys%dimen
+    !   do i=1,sys%nbond
+    !       d2r(j,sys%mb(i),i) = -r(i)*dr(j,sys%mb(i),i)**2 + r(i)
+    !       d2r(j,sys%nb(i),i) = d2r(j,sys%mb(i),i)
+    !   enddo
+    !enddo
     !r=1/r
 end subroutine intern

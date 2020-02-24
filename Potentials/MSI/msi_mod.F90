@@ -37,8 +37,9 @@
             !Calculated potential energy
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
             
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom)  :: dFsqr 
 
             !Variables used internally by the modified shepard code
               
@@ -81,11 +82,20 @@
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
-                    dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)*dr(k,param%sys%mb(j),j)
-                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
+                    dV(k,param%sys%mb(j)) = dV(k,param%sys%mb(j))+dVdR(j)* & 
+                         dr(k,param%sys%mb(j),j)
+                    dFsqr(k,param%sys%mb(j)) = dFsqr(k,param%sys%mb(j)) + &
+                           ddr_Fsqr(j)*dr(k,param%sys%mb(j),j)
+                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+ & 
+                         dVdR(j)*dr(k,param%sys%nb(j),j)
+                    dFsqr(k,param%sys%nb(j)) = dFsqr(k,param%sys%nb(j)) + &
+                           ddr_Fsqr(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
             r=1/r
+!print *, dV
+!print *, ''
+!print *, dFsqr
            
 
         end subroutine potential
