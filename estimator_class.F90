@@ -736,7 +736,7 @@ module Estimator_class
                         tempf2_even= (1.0-pimc%act%alpha)*Beads(i+1)%dVdx(k,j)**2
                         tempf2_even2 = (1.0-pimc%act%alpha)*(Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%dFsqr(k,j)
                         tmp_frc = tmp_frc + tempf2_odd + tempf2_even
-                        tmp_frc2 = tmp_frc + 0.5*(tempf2_odd2+tempf2_even2)
+                        tmp_frc2 = tmp_frc2 + (tempf2_odd2+tempf2_even2)
                     enddo
                     temp_sc_frc = temp_sc_frc + tmp_frc/sys%mass(j)
                     temp_sc_frc2 = temp_sc_frc2 + tmp_frc2/sys%mass(j)
@@ -749,11 +749,11 @@ module Estimator_class
             enddo
 
             frc_sc = frc_sc*pimc%Beta**2*(pimc%invNumBeads**3)/(9.0)
-            frc2_sc = (frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
+            frc2_sc = 0.5*(frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
 
             pe_sc = pe_sc*pimc%invNumBeads
             pe_sc=pe_sc+2.0*frc_sc
-            ke_sc=n2b+ke_sc+frc2_sc
+            ke_sc=n2b+ke_sc+frc2_sc+frc_sc
 
             e_sc=ke_sc+pe_sc
             
