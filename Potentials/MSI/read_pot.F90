@@ -48,7 +48,7 @@
 
       do i=1,interp%ndata
         !print *, ' allocating pot(',i,')'
-         call new(pot(i),sys%nbond)
+         call new(pot(i),sys%natom)
       enddo
 
 !  rewind and do a formatted read
@@ -83,6 +83,22 @@
 21    continue
       
       close(unit=3)
+
+      open(unit=159,file='/home/gaveux/pimc/input/pot_asymmod1.dat',action='write')
+      open(unit=169,file='/home/gaveux/pimc/input/pot_asymmod2.dat',action='write')
+      open(unit=179,file='/home/gaveux/pimc/input/pot_asymmod3.dat',action='write')
+      open(unit=189,file='/home/gaveux/pimc/input/pot_asymmod4.dat',action='write')
+      open(unit=149,file='/home/gaveux/pimc/input/pot_symmod.dat',action='write')
+      do j=1,interp%ndata
+         !write(179,*) (pot(j)%r(i),i=1,4)
+         call normod(pot(j)%r,sys%nbond)
+      enddo
+      close(unit=149)
+      close(unit=159)
+      close(unit=169)
+      close(unit=179)
+      close(unit=189)
+      call exit(0)
 
       write(11,*) ' Read in',interp%ndata,' data points from ', trim(filename)
       write(11,*) ' rejected ',reject,' data points as higher than vmax'
