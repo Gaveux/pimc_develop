@@ -48,6 +48,7 @@
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
+            real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
 
             
             integer :: j,k
@@ -58,14 +59,14 @@
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
-            call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind))
+            call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
             !endif
 
             V = V - param%interp%vmin
