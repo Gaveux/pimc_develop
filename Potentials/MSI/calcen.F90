@@ -1,6 +1,6 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp) 
     use molecule_specs
     use interpolation
 
@@ -12,6 +12,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR)
     type (neighbour_list), intent(in) :: neigh
 
     real(kind=8), dimension(:), intent(inout) :: Weight
+    real(kind=8), dimension(:), intent(in) :: RawWeightTemp
     real(kind=8), dimension(:), intent(in) :: r
     real(kind=8), intent(out) :: V
     real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
@@ -53,7 +54,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR)
     !!$OMP DO
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,temp,r)
     do k=1,neigh%numInner
-        temp = interp%ipow2*Weight(k)/Raw(k)
+        temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
         do i=1,sys%nbond
             DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
         enddo
