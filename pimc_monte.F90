@@ -433,7 +433,7 @@ module path_integral_monte_carlo
 #ifdef FREE_ENERGY
         if(pimc%doSample==1) then
 #endif
-        call end_sim(est)
+        call end_sim(pimc,est)
 #ifdef FREE_ENERGY
         endif
 

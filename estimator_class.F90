@@ -148,7 +148,8 @@ module Estimator_class
 
         end subroutine estimator_block
 
-        subroutine estimator_end(this)
+        subroutine estimator_end(pimc,this)
+            type (pimc_par), intent(in) :: pimc
             type (estimator), intent(inout) :: this
             integer :: i
             do i=1,9
@@ -162,7 +163,7 @@ module Estimator_class
                     write(*,*) 'Potential Energy'
 
                 endif
-                call print_end(this%vars(i))
+                call print_end(pimc,this%vars(i))
             enddo
              
            ! write(*,*) 'Total average energy:', this%vars(1)%mean_tot

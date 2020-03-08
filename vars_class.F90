@@ -162,11 +162,12 @@ module vars_class
 
 
 
-        subroutine print_var_end(this)
+        subroutine print_var_end(pimc,this)
             type (vars), intent(in) :: this
+            type (pimc_par), intent(in) :: pimc
             if(this%n_tot.ne.0) then
-            write(*,*) this%mean_tot, '+/-', sqrt(this%var_tot/this%n_tot), &
-            &           'Averages: ', this%n_tot
+            write(*,*) this%mean_tot, sqrt(this%var_tot/this%n_tot), &
+            &  sqrt(this%var_tot*pimc%NumBlocks/this%n_tot)
             endif
         end subroutine print_var_end
 
