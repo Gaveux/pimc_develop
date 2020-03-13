@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
+subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   use interpolation
   use molecule_specs
   implicit none
@@ -11,6 +11,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   type (molsysdat), intent(in) :: sys
   type (pot_data_point), dimension(:), pointer :: pot
   real(kind=8), dimension(:), intent(out) :: RawWeight
+  real(kind=8), dimension(:), intent(out) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
 
@@ -28,9 +29,10 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh)
   ! however it gives the correct result with a faster computing efficiency
   ! than the fixed version below
   RawWeight = 0.d0
-  !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight)
+  !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
   do i=1,interp%ndata
-     RawWeight(i) = 1.0/(sum((r-pot(i)%r)**2)**interp%ipow)
+     RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
+     RawWeight(i) = RawWeightTemp(i)**interp%ipow
   enddo
   !$OMP END PARALLEL DO
   totsum = sum(RawWeight)
