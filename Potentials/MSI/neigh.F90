@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
+subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCstep)
   use interpolation
   use molecule_specs
   implicit none
@@ -14,6 +14,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   real(kind=8), dimension(:), intent(out) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
+  integer, intent(in) :: current_MCstep
 
   integer :: i,j
   real(kind=8) totsum,tol, tmpWeight
@@ -25,8 +26,8 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   ! calculate raw weights and totsum in two loops for speed
   !----------------------------------------------------------
   
-  ! the size of array r and pot(i)%r mismatch, this is a bug!!
-  ! however it gives the correct result with a faster computing efficiency
+  ! the size of array r and pot(i)%r mismatch
+  ! however it does not give the wrong answer but rather it's faster
   ! than the fixed version below
   RawWeight = 0.d0
   !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
@@ -37,7 +38,6 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   !$OMP END PARALLEL DO
   totsum = sum(RawWeight)
   
-   
   !RawWeight = 0.d0
   !do j = 1, interp%ndata
   !   tmpWeight = 0.d0
@@ -50,6 +50,12 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   !RawWeight = 1.0/ (RawWeight**interp%ipow)
         
   !totsum = sum(RawWeight)
+  
+
+  ! periodically update inner neighbour list
+  if (mod(current_MCstep,interp%inneigh_update)==0) then
+     
+  endif
 
   !----------------------------------------------------------
   !  build the inner neighbour list
@@ -65,6 +71,10 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
 
   !----------------------------------------------------------
 
+
+  ! build the outer neighour list
+
+  
   return
 end subroutine
 
