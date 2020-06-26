@@ -20,7 +20,7 @@
 !----------------------------------------------------------------
 ! read in the derivative data from which the PES is interpolated
 !----------------------------------------------------------------
-
+print *, 'start reading pot file'
       write(11,*) '----------------------------------------------------'
       write(11,*) ' '
       write(11,*) '  read potential energy data from ', trim(filename)
@@ -40,7 +40,6 @@
       enddo
 
 11    continue
-
 !  allocate space
 
       allocate(pot(interp%ndata),stat=ierr)
@@ -48,7 +47,7 @@
 
       do i=1,interp%ndata
         !print *, ' allocating pot(',i,')'
-         call new(pot(i),sys%nbond)
+         call new(pot(i),sys%nbond,sys%natom)
       enddo
 
 !  rewind and do a formatted read
@@ -135,7 +134,7 @@
       if (ierr.ne.0) stop ' Error allocating allpot '
 
       do i=1,interp%ndata*interp%ngroup
-         call new(allpot(i),sys%nbond)
+         call new(allpot(i),sys%nbond,sys%natom)
       enddo
 
       ! copy permuted data into new array, checking for and 

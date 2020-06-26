@@ -259,7 +259,7 @@ module path_integral_monte_carlo
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
@@ -323,7 +323,6 @@ module path_integral_monte_carlo
                                     endif
                                 enddo
                               
-                               ! call update energy(sys,pimc,Beads,results) see "module estimator_class" 
                                 call update(sys,pimc,Beads,est)
 #ifdef FREE_ENERGY
                             endif

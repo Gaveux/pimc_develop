@@ -41,6 +41,7 @@ program pimc90
 #if POT == 0
     type (msi_params) :: pot
     character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM
+    integer :: ini_MCstep = 0
 #endif
 
     include 'pimc_setup.int'
@@ -137,7 +138,7 @@ program pimc90
     do i=1,pimc%NumBeadsEff
 #if POT == 0
       !MSI potential energy surfaces
-      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
+      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx, ini_MCstep)
 #else
       !Analytic potential energy surfaces
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)

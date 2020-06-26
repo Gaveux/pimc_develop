@@ -43,21 +43,24 @@ subroutine read_interp(interp, filename)
 
 !  read in the parameters defining the weight function, the neighbour
 !  list and the number of timesteps between calls to neighbour
-
+   
+   ! q and p
    read(7,80)   comment_line
    write(11,81) comment_line
    read(7,*)    interp%lowp, interp%ipow
    write(11,*)  interp%lowp, interp%ipow
 
+   ! weight cutoff for the inner and outer neighbour lists
    read(7,80)   comment_line
    write(11,81) comment_line
    read(7,*)    interp%wtol, interp%outer
    write(11,*)  interp%wtol, interp%outer
 
+   !number of MC steps for updates of the inner and outer neighbour lists
    read(7,80)   comment_line
    write(11,81) comment_line
-   read(7,*)    interp%neigh_update
-   write(11,*)  interp%neigh_update
+   read(7,*)    interp%inneigh_update, interp%outneigh_update
+   write(11,*)  interp%inneigh_update, interp%outneigh_update
 
 !  read in energy maximum and minimum with which to screen data
 
