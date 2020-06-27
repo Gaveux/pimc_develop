@@ -9,6 +9,7 @@
 
         use interpolation
         use molecule_specs
+        use pimc_structures
 
       
         implicit none
@@ -26,7 +27,7 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV,current_MCstep)
+        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc)
             integer, intent(in) :: ind, current_MCstep
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -49,6 +50,8 @@
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
+             
+            type(pimc_par), intent(in) :: pimc
 
             
             integer :: j,k
@@ -61,6 +64,8 @@
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,pa&
 &ram%neighlist(ind),RawWeightTemp,current_MCstep)
+print *, pimc%num_moves, pimc%atom_pass
+call exit(0)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 

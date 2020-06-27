@@ -40,7 +40,7 @@ module pimc_structures
         !Number of initial geometries, Beads for each geometry, Number of Beads, Number of effective beads (3*NumBeads for chin action), Effective Beads per geom = 3*Beads per Geom for chin action
         integer :: NumBeads, NumBeadsEff
         integer :: NumBlocks, BlocksToEquil, StepsPerBlock, NumBlocksLeft,BlocksToEquilLeft
-        integer :: Sample
+        integer :: Sample, num_moves, atom_pass
         character(len=80) :: start, resume, blk
 
         !stores the action parameters
