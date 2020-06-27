@@ -39,9 +39,8 @@ subroutine read_iseed(seedval,pimc,IN_ISEED)
        open(unit=7,file=trim(IN_ISEED),status='old')
        read(7,*) i
        close(7)
-       seedval%seedvalue = abs(i)
-       !sys%iseed = abs(i)
-       !seedval%seedvalue = 558085479 !only enable for debugging
+       !seedval%seedvalue = abs(i)
+       seedval%seedvalue = 558085479 !only enable for debugging
        print *, '                 Initial SEED:', seedval%seedvalue
     
     else if (pimc%Restart == 'y') then

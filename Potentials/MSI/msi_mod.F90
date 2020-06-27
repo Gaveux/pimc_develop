@@ -9,6 +9,7 @@
 
         use interpolation
         use molecule_specs
+        use pimc_structures
 
       
         implicit none
@@ -17,16 +18,20 @@
         type msi_params
             type(interp_params) :: interp
             type(pot_data_point), dimension(:), pointer :: pot
-            type (molsysdat) :: sys
+            type(molsysdat) :: sys
             type(neighbour_list), dimension(:), pointer :: neighlist
+            type(old_neighbout_list), dimension(:,:,:), pointer :: old_neighlist
         end type msi_params
         
+        !type old_neigh
+        !    type(old_neighbour), pointer :: old_inner
+        !end type old_neigh
 
         contains
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV,current_MCstep)
+        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc)
             integer, intent(in) :: ind, current_MCstep
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -49,18 +54,21 @@
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
-
-            
+             
+            type(pimc_par), intent(in) :: pimc
+             
             integer :: j,k
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
+            
 
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,pa&
 &ram%neighlist(ind),RawWeightTemp,current_MCstep)
+            
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
@@ -121,7 +129,13 @@
 
 
 
+        subroutine new_neigh_copy(old_neigh)
+        
+            type(msi_params), intent(out) :: old_neigh 
 
+            allocate(old_neigh()
+
+        end subroutine new_neigh_copy
 
 
 
