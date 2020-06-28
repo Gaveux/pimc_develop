@@ -227,7 +227,7 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
-            print *, iblock
+            !print *, iblock
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
@@ -260,7 +260,7 @@ module path_integral_monte_carlo
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter,pimc)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter,pimc,iatom,imove)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)

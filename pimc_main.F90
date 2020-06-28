@@ -42,6 +42,7 @@ program pimc90
     type (msi_params) :: pot
     character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM
     integer :: ini_MCstep = 0
+    integer :: iatom, imove
 #endif
 
     include 'pimc_setup.int'
@@ -135,10 +136,12 @@ program pimc90
 #endif
 
     ! calculate potential energies for the initial geometry
+    iatom = 0
+    imove = 0
     do i=1,pimc%NumBeadsEff
 #if POT == 0
       !MSI potential energy surfaces
-      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx, ini_MCstep,pimc)
+      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx, ini_MCstep,pimc,iatom,imove)
 #else
       !Analytic potential energy surfaces
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)

@@ -14,7 +14,9 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
   real(kind=8), dimension(:), intent(out) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
+  type(neighbour_list), dimension(:), pointer :: old_neigh
   integer, intent(in) :: current_MCstep
+
 
   integer :: i,j
   real(kind=8) totsum,tol, tmpWeight
@@ -69,12 +71,6 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
      endif
   enddo
 
-  !----------------------------------------------------------
-
-
-  ! build the outer neighour list
-
   
   return
 end subroutine
-
