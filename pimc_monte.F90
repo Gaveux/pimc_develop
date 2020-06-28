@@ -215,6 +215,10 @@ module path_integral_monte_carlo
 
         acctot=0.0
         moveacctot=0.0
+        if (pimc%WritingCheckpoint == 'y') then
+             open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
+             if (ioerror.ne.0) stop 'checkpoint file io error'
+        endif
  
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
@@ -223,7 +227,7 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
-            print *, iblock
+            !print *, iblock
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
@@ -256,7 +260,7 @@ module path_integral_monte_carlo
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter,pimc)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter,pimc,iatom,imove)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
@@ -387,9 +391,7 @@ module path_integral_monte_carlo
             pimc%NumBlocksLeft = pimc%NumBlocks - iblock
             pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
             if (pimc%WritingCheckpoint =='y') then 
-               open(unit=599,file=trim(checkpoint_dir)//trim(pimc%start),status='unknown',action='write',iostat=ioerror)
                rewind(unit=599)
-               !if (ioerror.eq.0) stop 'checkpoint file io error'
                ! save the seed value at the end of each block
                write(599,*) seedval%seedvalue
                ! Save the beads configuration at the end of each block

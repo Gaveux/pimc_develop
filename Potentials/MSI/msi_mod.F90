@@ -20,7 +20,7 @@
             type(pot_data_point), dimension(:), pointer :: pot
             type(molsysdat) :: sys
             type(neighbour_list), dimension(:), pointer :: neighlist
-            type(old_neighbout_list), dimension(:,:,:), pointer :: old_neighlist
+            integer, dimension(:), pointer :: neigh_copy
         end type msi_params
         
         !type old_neigh
@@ -31,7 +31,7 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc)
+        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc,iatom,imove)
             integer, intent(in) :: ind, current_MCstep
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -56,8 +56,11 @@
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
              
             type(pimc_par), intent(in) :: pimc
-             
-            integer :: j,k
+            integer, intent(in) :: iatom, imove
+            type(msi_params), dimension(:,:,:), pointer :: old_neigh
+            
+            integer :: i,j,k,ierr
+
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
@@ -65,10 +68,28 @@
 
             call intern(param%sys,x,r,dr)
 
+            print *, current_MCstep, iatom, imove, ind 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,pa&
 &ram%neighlist(ind),RawWeightTemp,current_MCstep)
+            !do i=1,param%neighlist(ind)%numInner
+            !  print *, param%neighlist(ind)%inner(i)
+            !enddo
+            !----------------------------------------------------------
+            ! declare an array that stores neigh%inner values
+            !---------------------------------------------------------
+            allocate(old_neigh(pimc%atom_pass,pimc%num_moves,pimc%NumBeadsEff),stat=ierr)
+            if (ierr.ne.0) stop 'Error allocating old_neigh array in msi_mod.F90'
             
+            do k=1,pimc%atom_pass
+               do j=1,pimc%num_moves
+                  call new_neigh_array(param%neighlist(ind),old_neigh(k,j,ind))
+               enddo
+            enddo
+
+            do i=1,param%neighlist(ind)%numInner
+               old_neigh(iatom,imove,ind)%neigh_copy(i) = param%neighlist(ind)%inner(i)
+            enddo 
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
@@ -128,17 +149,17 @@
         end subroutine MSI_INIT
 
 
+        subroutine new_neigh_array(neigh,copy)
+             use interpolation
 
-        subroutine new_neigh_copy(old_neigh)
-        
-            type(msi_params), intent(out) :: old_neigh 
+             type(neighbour_list), intent(in) :: neigh
+             type(msi_params)  :: copy
+             integer :: ierr
 
-            allocate(old_neigh()
+             allocate(copy%neigh_copy(neigh%numInner),stat=ierr)
+             if(ierr.ne.0) stop 'Error allocating neigh_copy array in neigh.F90'
 
-        end subroutine new_neigh_copy
-
-
-
-
+             return
+        end subroutine
 
       end module potential_msi
