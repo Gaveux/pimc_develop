@@ -57,7 +57,7 @@
              
             type(pimc_par), intent(in) :: pimc
             integer, intent(in) :: iatom, imove
-            type(msi_params), dimension(:,:,:), pointer :: old_neigh
+            type(msi_params), dimension(:,:), pointer :: old_neigh
             
             integer :: i,j,k,ierr
 
@@ -72,24 +72,23 @@
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,pa&
 &ram%neighlist(ind),RawWeightTemp,current_MCstep)
+
             !do i=1,param%neighlist(ind)%numInner
             !  print *, param%neighlist(ind)%inner(i)
             !enddo
+
             !----------------------------------------------------------
             ! declare an array that stores neigh%inner values
             !---------------------------------------------------------
-            allocate(old_neigh(pimc%atom_pass,pimc%num_moves,pimc%NumBeadsEff),stat=ierr)
+            allocate(old_neigh(pimc%atom_pass,pimc%NumBeadsEff),stat=ierr)
             if (ierr.ne.0) stop 'Error allocating old_neigh array in msi_mod.F90'
             
-            do k=1,pimc%atom_pass
-               do j=1,pimc%num_moves
-                  call new_neigh_array(param%neighlist(ind),old_neigh(k,j,ind))
-               enddo
-            enddo
+            !do k=1,pimc%atom_pass
+            !   do j=1,pimc%num_moves
+            !      call new_neigh_array(param%neighlist(ind),old_neigh(k,j,ind))
+            !   enddo
+            !enddo
 
-            do i=1,param%neighlist(ind)%numInner
-               old_neigh(iatom,imove,ind)%neigh_copy(i) = param%neighlist(ind)%inner(i)
-            enddo 
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
