@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCstep)
+subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCstep,update)
   use interpolation
   use molecule_specs
   implicit none
@@ -16,7 +16,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
   type (neighbour_list), intent(out) :: neigh
   type(neighbour_list), dimension(:), pointer :: old_neigh
   integer, intent(in) :: current_MCstep
-
+  logical, intent(inout) :: update
 
   integer :: i,j
   real(kind=8) totsum,tol, tmpWeight
@@ -54,10 +54,6 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
   !totsum = sum(RawWeight)
   
 
-  ! periodically update inner neighbour list
-  if (mod(current_MCstep,interp%inneigh_update)==0) then
-     
-  endif
 
   !----------------------------------------------------------
   !  build the inner neighbour list

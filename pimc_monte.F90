@@ -148,6 +148,7 @@ module path_integral_monte_carlo
         integer :: n_bl, n_ba, n_d
         logical :: equil = .TRUE.
         logical :: atom_move
+        logical :: inner_update = .FALSE.
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 
@@ -259,8 +260,12 @@ module path_integral_monte_carlo
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
+                            if (mod(iter,pot%interp%inneigh_update)==1 .AND. imove==pimc%num_moves) then
+                                inner_update = .TRUE.
+                            endif 
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iter,pimc,iatom,imove)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr&
+&,Beads(ind)%dVdx,iter,pimc,iatom,imove,inner_update)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
@@ -336,6 +341,7 @@ module path_integral_monte_carlo
                         endif
                     enddo
                 enddo
+print *, '----------------------------------------------------------------------'
 #ifdef FREE_ENERGY
                 if(equil) then
                 else
