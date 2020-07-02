@@ -155,7 +155,6 @@ program pimc90
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
 #endif
     enddo
-    call exit(0)
  
     ! copy the initial geometry to the end of the array (NumGeoms + 1)
     ! to make summing the action over the whole closed system easier

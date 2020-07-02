@@ -42,14 +42,83 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
      RawWeight(i) = RawWeightTemp(i)**interp%ipow
   enddo
   !$OMP END PARALLEL DO
-  totsum = sum(RawWeight)
-
-  !if (update) then
-
+  
     !----------------------------------------------------------
     !  build the inner neighbour list
     !----------------------------------------------------------
 
+    !totsum = sum(RawWeight)
+    !tol = interp%wtol*totsum
+    !do i=1,interp%ndata
+    !   if (RawWeight(i) > tol) then
+    !     neigh%numInner = neigh%numInner + 1
+    !     neigh%inner(neigh%numInner) = i
+    !   endif
+    !enddo
+  if (interp%inneigh_update == 1) then
+     call inner_neigh_update(interp,neigh,RawWeight) 
+  else 
+     if (update) then
+
+         call inner_neigh_update(interp,neigh,RawWeight) 
+
+         do i=1,neigh%numInner
+            neigh_copy(iatom,ind,i) = neigh%inner(i)
+         enddo
+
+     elseif (update==.FALSE. .AND. current_MCstep.LE.1) then
+
+         !print *, 'this should only appear before and during the first update'
+         call inner_neigh_update(interp,neigh,RawWeight)
+
+     elseif (update==.FALSE. .AND. current_MCstep.GT.1) then 
+
+         !=====================================
+         ! Restore the neigh%inner array
+         !===================================== 
+    
+         !do i=1, interp%ndata
+         !   if (neigh_copy(iatom,ind,i).GT.0) then
+         !      neigh%numInner = neigh%numInner+1 
+         !      neigh%inner(neigh%numInner) = neigh_copy(iatom,ind,neigh%numInner)
+         !   endif     
+         !enddo
+         !print *, 'restoring neighbour list'
+
+         neigh%numInner = count(neigh_copy(iatom,ind,:).ne.0)
+         neigh%inner = neigh_copy(iatom,ind,:)
+
+     else
+         stop 'Unexpected exception in neighbour list update: neigh.F90'
+         call exit(0)
+     endif
+     
+     update =.FALSE.
+  endif
+  !print *, (neigh%inner(i),i=1,neigh%numInner)
+  
+  return
+end subroutine
+
+subroutine inner_neigh_update(interp,neigh,RawWeight)
+
+    use interpolation  
+
+    implicit none
+
+    type (interp_params), intent(in) :: interp
+    real(kind=8), dimension(interp%ndata), intent(in) :: RawWeight
+    type (neighbour_list), intent(out) :: neigh
+    
+    real(kind=8) :: tol,totsum 
+    integer :: i
+    tol = 0.d0
+    totsum = 0.d0
+
+    !----------------------------------------------------------
+    !  build the inner neighbour list
+    !----------------------------------------------------------
+    totsum = sum(RawWeight)
     tol = interp%wtol*totsum
     do i=1,interp%ndata
        if (RawWeight(i) > tol) then
@@ -57,36 +126,6 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCst
          neigh%inner(neigh%numInner) = i
        endif
     enddo
-    print *, (neigh%inner(i), i=1,neigh%numInner)
-    print *, '************'
 
-    !do i=1,neigh%numInner
-    !   neigh_copy(iatom,ind,i) = neigh%inner(i)
-    !enddo
-
-     !print *, (neigh_copy(iatom,ind,i),i=1,neigh%numInner)
-     !print *, '------------------------------'
-    
-     update = .FALSE.
-
-  !endif
-
-  !if (update==.FALSE. .AND. current_MCstep .GT. 1) then 
-
-  !   !=====================================
-  !   ! Restore the neigh%inner array
-  !   !===================================== 
-  !   do i=1, interp%ndata
-  !      if (neigh_copy(iatom,ind,i).GT.0) then
-  !         counter = counter+1 
-  !         neigh%inner(counter) = neigh_copy(iatom,ind,counter)
-  !      endif     
-  !   enddo
-  !  do i=1, interp%ndata
-  !     print *, neigh_copy(iatom,ind,i)
-  !  enddo
-
-  !endif
-  
-  return
+    return
 end subroutine
