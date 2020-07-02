@@ -1,8 +1,9 @@
 
 interface 
-  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCstep,update)
+  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,current_MCstep,update,pimc,neigh_copy,iatom,ind)
   use molecule_specs
   use interpolation
+  use pimc_structures
 
   type (interp_params), intent(in) :: interp
   type (molsysdat), intent(in) :: sys
@@ -11,8 +12,10 @@ interface
   real(kind=8), dimension(:), intent(inout) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
-  integer, intent(in) :: current_MCstep
+  integer, intent(in) :: current_MCstep, iatom, ind
   logical, intent(inout) :: update
+  type(pimc_par), intent(in) :: pimc
+  integer, dimension(pimc%atom_pass,pimc%NumBeadsEff,interp%ndata), intent(inout) :: neigh_copy
 
   end subroutine
 end interface

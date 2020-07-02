@@ -44,6 +44,8 @@ program pimc90
     integer :: ini_MCstep = 0
     integer :: iatom, imove
     logical :: inner_update = .FALSE.
+    integer, dimension(:,:,:), allocatable :: old_neigh
+    integer :: ierr
 #endif
 
     include 'pimc_setup.int'
@@ -134,6 +136,11 @@ program pimc90
 #if POT == 0
     !Initialise the modified shepard potential energy surface
     call MSI_INIT(pot,sys,IN_INTERP,POT_FILE,IN_ATOMPERM,pimc%numBeadsEff)
+    !print *, pot%interp%ndata
+    !call neigh_copy(pot,pimc,old_neigh)
+    allocate(old_neigh(pimc%atom_pass,pimc%NumBeadsEff,pot%interp%ndata),stat=ierr)
+    if (ierr.ne.0) stop 'Error allocating old_neigh array in pimc_main.F90'
+    old_neigh = 0
 #endif
 
     ! calculate potential energies for the initial geometry
@@ -142,12 +149,13 @@ program pimc90
     do i=1,pimc%NumBeadsEff
 #if POT == 0
       !MSI potential energy surfaces
-      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx, ini_MCstep,pimc,iatom,imove,inner_update)
+      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx, ini_MCstep,pimc,iatom,imove,inner_update,old_neigh)
 #else
       !Analytic potential energy surfaces
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
 #endif
     enddo
+    call exit(0)
  
     ! copy the initial geometry to the end of the array (NumGeoms + 1)
     ! to make summing the action over the whole closed system easier
@@ -159,7 +167,10 @@ program pimc90
     !Create file target for writing variables at end of simulation
     pimc%start=sfilename
 #if POT == 0
-    call pimc_monte(seedval,sys,pimc,Beads,OldBeads,pot,OUT_DIRECTORY,CHECKPOINT_DIRECTORY,IN_BINNING)
+    call pimc_monte(seedval,sys,pimc,Beads,OldBeads,pot,OUT_DIRECTORY,CHECKPOINT_DIRECTORY,IN_BINNING,old_neigh)
+    deallocate(old_neigh,stat=ierr)
+    if (ierr.ne.0) stop 'Error deallocating old_neigh in pimc_main.F90'
+   
 #else 
     call pimc_monte(seedval,sys,pimc,Beads,OldBeads,OUT_DIRECTORY,CHECKPOINT_DIRECTORY,IN_BINNING)
 #endif

@@ -115,7 +115,7 @@ module path_integral_monte_carlo
 
 ! main loop for path integral Monte Carlo
 #if POT == 0
-    subroutine pimc_monte(seedval,sys,pimc,Beads,OldBeads, pot,out_dir, checkpoint_dir, binning_in)
+    subroutine pimc_monte(seedval,sys,pimc,Beads,OldBeads, pot,out_dir, checkpoint_dir, binning_in,neigh_copy)
 #else
     subroutine pimc_monte(seedval,sys,pimc,Beads,OldBeads, out_dir, checkpoint_dir, binning_in)
 #endif
@@ -126,6 +126,7 @@ module path_integral_monte_carlo
         type (pimc_particle), dimension(:), pointer :: OldBeads
 #if POT == 0
         type(msi_params) :: pot
+        integer, dimension(pimc%atom_pass,pimc%NumBeadsEff,pot%interp%ndata), intent(inout) :: neigh_copy
 #endif
         character(len=80), intent(in) :: out_dir
         character(len=80), intent(in) :: checkpoint_dir
@@ -233,7 +234,7 @@ module path_integral_monte_carlo
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
            
-                do iatom=1,pimc%atom_pass
+                do iatom=1,pimc%atom_pass ! for staging, atom_pass = sys%natom
                     do imove=1,pimc%num_moves
                         atom_move=.false.
                         if(imove.eq.pimc%num_moves) then
@@ -260,12 +261,13 @@ module path_integral_monte_carlo
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
+                            print *, iter, iatom, imove, ind
                             if (mod(iter,pot%interp%inneigh_update)==1 .AND. imove==pimc%num_moves) then
                                 inner_update = .TRUE.
                             endif 
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr&
-&,Beads(ind)%dVdx,iter,pimc,iatom,imove,inner_update)
+&,Beads(ind)%dVdx,iter,pimc,iatom,imove,inner_update,neigh_copy)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)

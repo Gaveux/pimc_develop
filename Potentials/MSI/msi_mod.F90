@@ -31,7 +31,7 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc,iatom,imove,update)
+        subroutine potential(ind,param,x,r,V,dV,current_MCstep,pimc,iatom,imove,update,copy)
             integer, intent(in) :: ind, current_MCstep
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -56,9 +56,9 @@
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
              
             type(pimc_par), intent(in) :: pimc
+            ! Stores the neighbour list for each atom, beads
+            integer, dimension(pimc%atom_pass,pimc%NumBeadsEff,param%interp%ndata), intent(inout) :: copy
             integer, intent(in) :: iatom, imove
-            !type(msi_params), dimension(:,:), pointer :: old_neigh
-            type(msi_params), dimension(pimc%atom_pass,pimc%NumBeadsEff) :: old_neigh
             
             integer :: i,j,k,ierr
             logical, intent(inout) :: update
@@ -76,37 +76,11 @@
             ! declare an array that stores neigh%inner values
             !---------------------------------------------------------
             
-            !if (update) then
-               !allocate(old_neigh(pimc%atom_pass,pimc%NumBeadsEff),stat=ierr)
-               !if (ierr.ne.0) stop 'Error allocating old_neigh array in msi_mod.F90'
-            !endif
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,pa&
-&ram%neighlist(ind),RawWeightTemp,current_MCstep,update)
+&ram%neighlist(ind),RawWeightTemp,current_MCstep,update,pimc,copy,iatom,ind)
 
-            !do i=1,param%neighlist(ind)%numInner
-            !  print *, param%neighlist(ind)%inner(i)
-            !enddo
-
-            if (update) then 
-
-                  call new_neigh_array(param%neighlist(ind),old_neigh(iatom,ind))
-
-                  do i= 1, param%neighlist(ind)%numInner
-                     old_neigh(iatom,ind)%neigh_copy(i) = param%neighlist(ind)%inner(i)
-                  enddo
-                    
-                  print *, iatom, ind
-                  print *, old_neigh(iatom,ind)%neigh_copy
-                  update = .FALSE.
-            endif
-              if (current_MCstep .gt. 1) then
-                 print *, 'iatom =', iatom, 'ind =', ind
-                 print *, old_neigh(4,10)%neigh_copy
-                 print *, old_neigh(5,10)%neigh_copy
-              endif
-              !print *, (param%neighlist(ind)%inner(i), i=1,param%neighlist(ind)%numInner)
 
 
             !Interpolate the surface - currently only the one part weight function is implemented
