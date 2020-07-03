@@ -72,15 +72,15 @@ contains
   !--------------------------------------
   ! create a pot_data_point
   !--------------------------------------
-  subroutine PotDataPoint_init(this,n) 
+  subroutine PotDataPoint_init(this,n,natom) 
     type (pot_data_point) :: this
-    integer, intent(in) :: n
+    integer, intent(in) :: n, natom
     integer :: nbond,nint,ierr
     nbond = n*(n-1)/2  ! n is number of atoms
     if (n > 2) then
-       nint = 3*n-6
+       nint = 3*natom-6
     else
-       nint = 3*n-5
+       nint = 3*natom-5
     endif
     allocate(this%r(nbond),stat=ierr)
     if (ierr.ne.0) stop ' PotDataPoint allocation error '
