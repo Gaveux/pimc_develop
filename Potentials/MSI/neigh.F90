@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
+subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
   use interpolation
   use molecule_specs
   implicit none
@@ -17,9 +17,8 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
 
   integer :: i,j
   real(kind=8) totsum,tol, tmpWeight
+  logical, intent(in) :: update
 
-  neigh%numInner=0    ! number of neighbours
-  neigh%inner = 0      ! list of (inner) neighbours
 
   !----------------------------------------------------------
   ! calculate raw weights and totsum in two loops for speed
@@ -50,18 +49,24 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   !RawWeight = 1.0/ (RawWeight**interp%ipow)
         
   !totsum = sum(RawWeight)
+  if (update) then
+     !----------------------------------------------------------
+     !  build the inner neighbour list
+     !----------------------------------------------------------
+     neigh%numInner=0    ! number of neighbours
+     neigh%inner = 0      ! list of (inner) neighbours
 
-  !----------------------------------------------------------
-  !  build the inner neighbour list
-  !----------------------------------------------------------
+     tol = interp%wtol*totsum
+     do i=1,interp%ndata
+        if (RawWeight(i) > tol) then
+          neigh%numInner = neigh%numInner + 1
+          neigh%inner(neigh%numInner) = i
+        endif
+     enddo
+  endif
 
-  tol = interp%wtol*totsum
-  do i=1,interp%ndata
-     if (RawWeight(i) > tol) then
-       neigh%numInner = neigh%numInner + 1
-       neigh%inner(neigh%numInner) = i
-     endif
-  enddo
+  !print *, 'after reaching neighbour list assignment', neigh%numInner, update
+  !print *, (neigh%inner(i),i=1,neigh%numInner)
 
   !----------------------------------------------------------
 

@@ -18,7 +18,7 @@
             type(interp_params) :: interp
             type(pot_data_point), dimension(:), pointer :: pot
             type (molsysdat) :: sys
-            type(neighbour_list), dimension(:), pointer :: neighlist
+            type(neighbour_list), dimension(:,:), pointer :: neighlist
         end type msi_params
         
 
@@ -26,8 +26,8 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV)
-            integer, intent(in) :: ind
+        subroutine potential(ind,param,x,r,V,dV,iatom,update)
+            integer, intent(in) :: ind, iatom
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
             ! Cartesian positions of atoms in system
@@ -49,24 +49,30 @@
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
+            logical, intent(in) :: update
 
             
-            integer :: j,k
+            integer :: j,k,i
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
 
+            !print *, 'before reaching neighbour list assignment', param%neighlist(iatom,ind)%numInner, update
+            !print *, (param%neighlist(iatom,ind)%inner(i),i=1,param%neighlist(iatom,ind)%numInner)
+            !print *, '----------------------------------------------------'
+
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
-            call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
+            call neighbour(param%sys,param%interp,param%pot,Weight,r&
+&,param%neighlist(iatom,ind),RawWeightTemp,update)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(iatom,ind),Weight,r,V,dVdr,RawWeightTemp)
             !endif
 
             V = V - param%interp%vmin
@@ -97,7 +103,7 @@
             character(len=80), intent(in) :: pot_file
             character(len=80), intent(in) :: atom_perm_file
             integer, intent(in) :: num_copies
-            integer :: ierr,i
+            integer :: ierr,i,j
 
             include 'bondperms.int'
             include 'read_pot.int'
@@ -107,22 +113,16 @@
             call bondperm(this%interp,this%sys,atom_perm_file)
             call read_pot(this%sys,this%interp,this%pot,pot_file)
             
-            allocate(this%neighlist(num_copies),stat=ierr)
+            allocate(this%neighlist(sys%natom,num_copies),stat=ierr)
             if(ierr.ne.0) stop 'Error allocating the neighbour list array in MSI_INIT'
-            do i=1,num_copies
-                allocate(this%neighlist(i)%inner(this%interp%ndata),stat=ierr)
-                if(ierr.ne.0) stop 'Error allocating inner neighbour lists'
-                this%neighlist(i)%numInner=0
+            do j=1,sys%natom
+               do i=1,num_copies
+                  allocate(this%neighlist(j,i)%inner(this%interp%ndata),stat=ierr)
+                  if(ierr.ne.0) stop 'Error allocating inner neighbour lists'
+               enddo
             enddo
+            this%neighlist%numInner=0
             
         end subroutine MSI_INIT
-
-
-
-
-
-
-
-
 
       end module potential_msi

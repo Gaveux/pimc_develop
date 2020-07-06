@@ -148,6 +148,9 @@ module path_integral_monte_carlo
         logical :: atom_move
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
+#if POT == 0
+        logical :: inner_update
+#endif
     
         !print the pimc parameters out
         call print_pimc_header(sys,pimc)
@@ -243,9 +246,18 @@ module path_integral_monte_carlo
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
-                            print *, iblock, iter, iatom, imove, ind
+                            !print *, iblock, iter, iatom, imove, ind
+                            if (pot%interp%inneigh_update==1) then
+                                inner_update = .TRUE.
+                            else
+                                if(mod(iter,pot%interp%inneigh_update)==1) then
+                                    inner_update = .TRUE.
+                                else
+                                    inner_update = .FALSE.
+                                endif
+                            endif
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iatom,inner_update)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)

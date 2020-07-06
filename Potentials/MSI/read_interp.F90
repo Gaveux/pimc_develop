@@ -56,8 +56,8 @@ subroutine read_interp(interp, filename)
 
    read(7,80)   comment_line
    write(11,81) comment_line
-   read(7,*)    interp%neigh_update
-   write(11,*)  interp%neigh_update
+   read(7,*)    interp%inneigh_update, interp%outneigh_update
+   write(11,*)  interp%inneigh_update, interp%outneigh_update
 
 !  read in energy maximum and minimum with which to screen data
 
