@@ -345,6 +345,17 @@ subroutine read_pimc(sys,pimc,in_file)
         stop 'Staging more beads than there are beads to move'
     endif
 
+!determine the number of moves that need to be made per monte carlo pass
+        pimc%atom_pass = 0
+        if(pimc%move%move_type.eq.0) then
+            pimc%num_moves=1
+            pimc%atom_pass=1
+        else if(pimc%move%move_type.eq.1) then
+            pimc%num_moves=ceiling(dble(pimc%NumBeadsEff)/dble(pimc%move%MovesPerStep))+1
+            pimc%atom_pass=sys%natom
+        endif
+
+
     pimc%invBeta=3.16681520371153d-6*pimc%Temperature
     pimc%Beta = 1.0/pimc%invBeta
     pimc%invNumBeads = 1.0d0/dble(pimc%NumBeads)

@@ -28,10 +28,9 @@ module path_integral_monte_carlo
 
     contains
 
-    subroutine print_pimc_header(sys,pimc,num_moves)
+    subroutine print_pimc_header(sys,pimc)
         type(molsysdat), intent(in) :: sys
         type(pimc_par), intent(inout) :: pimc
-        integer, intent(in) :: num_moves
         integer :: i,j,k, NumBlocksLeft, BlocksToEquilLeft
         type (estimator) :: est
         print *, '==============================================================================='
@@ -74,7 +73,7 @@ module path_integral_monte_carlo
         print *, ' Atomic displacement parameter (MC move)     ',pimc%move%AtomDisp
         print *, ' Displacement factor for moving beads        ',pimc%move%BeadDisp
         print *, ' Number of beads displaced per step (staging)',pimc%move%MovesPerStep
-        print *, ' Moves Per Monte Carlo Pass =                ',num_moves
+        print *, ' Moves Per Monte Carlo Pass =                ',pimc%num_moves
         print *, ' Action type                                 ',pimc%act%act_type
         print *, ' t0 =                                        ',pimc%act%t0
         print *, ' a1 =                                        ',pimc%act%a1
@@ -143,25 +142,15 @@ module path_integral_monte_carlo
         real(kind=8) :: accept, acctot, moveacc, moveacctot
         real(kind=8) deltae, rand, B_init
         integer :: i, ind, ioerror
-        integer :: imove,iatom,num_moves,atom_pass
+        integer :: imove,iatom
         integer :: n_bl, n_ba, n_d
         logical :: equil = .TRUE.
         logical :: atom_move
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
-
-        atom_pass=0
-        !determine the number of moves that need to be made per monte carlo pass
-        if(pimc%move%move_type.eq.0) then
-            num_moves=1
-            atom_pass=1
-        else if(pimc%move%move_type.eq.1) then
-            num_moves=ceiling(dble(pimc%NumBeadsEff)/dble(pimc%move%MovesPerStep))+1
-            atom_pass=sys%natom
-        endif
     
         !print the pimc parameters out
-        call print_pimc_header(sys,pimc,num_moves)
+        call print_pimc_header(sys,pimc)
         
 
         if (pimc%Restart == 'n') then
@@ -227,10 +216,10 @@ module path_integral_monte_carlo
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
            
-                do iatom=1,atom_pass
-                    do imove=1,num_moves
+                do iatom=1,pimc%atom_pass
+                    do imove=1,pimc%num_moves
                         atom_move=.false.
-                        if(imove.eq.num_moves) then
+                        if(imove.eq.pimc%num_moves) then
                             atom_move=.true.
                         endif
                         do ibead=1,pimc%NumBeadsEff+1
@@ -337,7 +326,7 @@ module path_integral_monte_carlo
                 else
                     !If reversible scaling update the temperature at the end of each step
                     if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                        call reversibleScalingStep(free,pimc,iter,dble(num_moves*atom_pass))
+                        call reversibleScalingStep(free,pimc,iter,dble(pimc%num_moves*pimc%atom_pass))
                         call tempStep(pimc)
                     endif
                 endif
@@ -347,11 +336,11 @@ module path_integral_monte_carlo
             !End of the step
 
             !Process the results at the end of the block
-            accept = accept / (pimc%StepsPerBlock*atom_pass)
+            accept = accept / (pimc%StepsPerBlock*pimc%atom_pass)
             acctot = acctot + accept
      
             if(pimc%move%move_type.eq.1) then
-                moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
+                moveacc = moveacc / (pimc%StepsPerBlock*(pimc%num_moves-1)*sys%natom)
                 moveacctot = moveacctot + moveacc
             endif
             !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept

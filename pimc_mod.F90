@@ -41,6 +41,7 @@ module pimc_structures
         integer :: NumBeads, NumBeadsEff
         integer :: NumBlocks, BlocksToEquil, StepsPerBlock, NumBlocksLeft,BlocksToEquilLeft
         integer :: Sample
+        integer :: num_moves, atom_pass
         character(len=80) :: start, resume, blk
 
         !stores the action parameters
