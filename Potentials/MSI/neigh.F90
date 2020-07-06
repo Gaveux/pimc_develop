@@ -2,7 +2,7 @@
 ! choose which data points to include in the neighbour list
 
 
-subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
+subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update,outer_update)
   use interpolation
   use molecule_specs
   implicit none
@@ -17,16 +17,15 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
 
   integer :: i,j
   real(kind=8) totsum,tol, tmpWeight
-  logical, intent(in) :: update
+  logical, intent(in) :: inner_update, outer_update
 
+  if (outer_update) then 
+     call update_outer_neighlist(interp,neigh,totsum,RawWeight)
+  endif
 
   !----------------------------------------------------------
   ! calculate raw weights and totsum in two loops for speed
   !----------------------------------------------------------
-  
-  ! the size of array r and pot(i)%r mismatch, this is a bug!!
-  ! however it gives the correct result with a faster computing efficiency
-  ! than the fixed version below
   RawWeight = 0.d0
   !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
   do i=1,interp%ndata
@@ -35,21 +34,9 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
   enddo
   !$OMP END PARALLEL DO
   totsum = sum(RawWeight)
+
   
-   
-  !RawWeight = 0.d0
-  !do j = 1, interp%ndata
-  !   tmpWeight = 0.d0
-  !   do i = 1,sys%nbond
-  !      tmpWeight = tmpWeight + (r(i) - pot(j)%r(i))**2
-  !   enddo
-  !      RawWeight(j) = tmpWeight
-        
-  !enddo
-  !RawWeight = 1.0/ (RawWeight**interp%ipow)
-        
-  !totsum = sum(RawWeight)
-  if (update) then
+  if (inner_update) then
      !----------------------------------------------------------
      !  build the inner neighbour list
      !----------------------------------------------------------
@@ -65,11 +52,35 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
      enddo
   endif
 
-  !print *, 'after reaching neighbour list assignment', neigh%numInner, update
-  !print *, (neigh%inner(i),i=1,neigh%numInner)
-
   !----------------------------------------------------------
 
   return
 end subroutine
 
+
+subroutine update_outer_neighlist(interp,neigh,totsum,RawWeight)
+     use interpolation
+     
+     type(interp_params), intent(in) :: interp
+     type(neighbour_list), intent(out) :: neigh 
+     real(kind=8), dimension(interp%ndata), intent(in) :: RawWeight
+     real(kind=8), intent(in) :: totsum
+     real(kind=8) :: outtol
+
+     integer :: i
+
+     !---------------------------------------------------------
+     ! build the outer neighbour list
+     !---------------------------------------------------------
+     neigh%numOuter=0
+     neigh%outer=0
+     outtol=interp%outer*totsum
+     do i=1,interp%ndata
+        if (RawWeight(i) > outtol) then
+            neigh%numOuter = neigh%numOuter + 1
+            neigh%outer(neigh%numOuter) = i
+        endif
+     enddo
+
+     return
+end subroutine

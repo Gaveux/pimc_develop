@@ -246,7 +246,15 @@ module path_integral_monte_carlo
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
+                            ! check whether updating outer neighbour list
+                            if (pot%interp%outneigh_update==1) then
+                                outer_update = .TRUE.
+                            elseif (mod(iter,pot%interp%outneigh_update)==1) then
+                                outer_update = .FALSE.
+                            endif
+
                             !print *, iblock, iter, iatom, imove, ind
+                            ! check whether updating inner neighbour list
                             if (pot%interp%inneigh_update==1) then
                                 inner_update = .TRUE.
                             else
@@ -257,7 +265,8 @@ module path_integral_monte_carlo
                                 endif
                             endif
                             !MSI potential energy surfaces
-                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,iatom,inner_update)
+                            call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr&
+&,Beads(ind)%dVdx,iatom,inner_update,outer_update)
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)

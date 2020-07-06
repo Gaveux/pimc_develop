@@ -36,7 +36,8 @@ module interpolation
   type neighbour_list
     real(kind=8), dimension(:), pointer :: r
     integer, dimension(:), pointer :: inner
-    integer :: numInner
+    integer, dimension(:), pointer :: outer
+    integer :: numInner, numOuter
   end type
   !-------------------------------------
   ! constructor for PotDataPoint

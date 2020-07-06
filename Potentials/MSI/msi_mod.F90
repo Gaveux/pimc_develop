@@ -26,7 +26,7 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV,iatom,update)
+        subroutine potential(ind,param,x,r,V,dV,iatom,inner_update,outer_update)
             integer, intent(in) :: ind, iatom
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -49,7 +49,7 @@
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
-            logical, intent(in) :: update
+            logical, intent(in) :: inner_update, outer_update
 
             
             integer :: j,k,i
@@ -65,7 +65,7 @@
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r&
-&,param%neighlist(iatom,ind),RawWeightTemp,update)
+&,param%neighlist(iatom,ind),RawWeightTemp,inner_update,outer_update)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
@@ -119,9 +119,12 @@
                do i=1,num_copies
                   allocate(this%neighlist(j,i)%inner(this%interp%ndata),stat=ierr)
                   if(ierr.ne.0) stop 'Error allocating inner neighbour lists'
+                  allocate(this%neighlist(j,i)%outer(this%interp%ndata),stat=ierr)
+                  if(ierr.ne.0) stop 'Error allocating outer neighbour lists'
                enddo
             enddo
             this%neighlist%numInner=0
+            this%neighlist%numOuter=0
             
         end subroutine MSI_INIT
 
