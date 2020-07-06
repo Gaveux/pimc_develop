@@ -243,6 +243,7 @@ module path_integral_monte_carlo
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
+                            print *, iblock, iter, iatom, imove, ind
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
 #else

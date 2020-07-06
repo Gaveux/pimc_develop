@@ -110,7 +110,7 @@
             allocate(this%neighlist(num_copies),stat=ierr)
             if(ierr.ne.0) stop 'Error allocating the neighbour list array in MSI_INIT'
             do i=1,num_copies
-                allocate(this%neighlist(i)%inner(this%interp%ndata*this%interp%ngroup),stat=ierr)
+                allocate(this%neighlist(i)%inner(this%interp%ndata),stat=ierr)
                 if(ierr.ne.0) stop 'Error allocating inner neighbour lists'
                 this%neighlist(i)%numInner=0
             enddo
