@@ -64,8 +64,8 @@
             call intern(param%sys,x,r,dr)
 
             !Update the inner neighbour list each potential evaluation
-            call neighbour(param%sys,param%interp,param%pot,Weight,r&
-&,param%neighlist(iatom,ind),RawWeightTemp,inner_update,outer_update)
+            call neighbour(param%sys,param%interp,param%pot,Weight,r,&
+&param%neighlist(iatom,ind),RawWeightTemp,inner_update,outer_update)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 

@@ -54,25 +54,29 @@ subroutine read_interp(interp, filename)
    read(7,*)    interp%wtol, interp%outer
    write(11,*)  interp%wtol, interp%outer
 
-   if (interp%wtol.LE.interp%outer) then
-      print *, 'ERROR: inner neighbour list weight-cutoff must be larger than that of outer nbeighbour list'
-      call exit(0)
-   endif
+   !if (interp%wtol.LE.interp%outer) then
+   !   print *, 'ERROR: inner neighbour list weight-cutoff must be larger than that of outer nbeighbour list'
+   !   call exit(0)
+   !endif
 
    read(7,80)   comment_line
    write(11,81) comment_line
    read(7,*)    interp%inneigh_update, interp%outneigh_update
    write(11,*)  interp%inneigh_update, interp%outneigh_update
    
-   if (interp%inneigh_update.LT.interp%outneigh_update) then
+   if (interp%inneigh_update.GT.interp%outneigh_update) then
       print *, 'ERROR: inner neighbour list must update more often than outer neighbour list' 
       call exit(0)
    elseif (interp%inneigh_update.EQ.interp%outneigh_update) then
-      if (interp%inneigh_update.EQ.1) then
-         print *, 'inner and outer neighbour lists are updated every step'
-      else
-         print *, 'outer neighbour list is disabled, neighbour list is updated every',interp%inneigh_update, 'step' 
-      endif
+      !if (interp%inneigh_update.EQ.1) then
+         print *, 'update frequency for inner and outer neighbour list cannot be equal'
+         call exit(0)
+         !print *, 'inner and outer neighbour lists are updated every step'
+      !else
+        
+        !call exit(0)
+         !print *, 'outer neighbour list is disabled, neighbour list is updated every',interp%inneigh_update, 'step' 
+      !endif
    endif
 
 !  read in energy maximum and minimum with which to screen data

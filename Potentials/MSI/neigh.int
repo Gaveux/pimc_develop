@@ -1,6 +1,6 @@
 
 interface 
-  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,update)
+  subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update,outer_update)
   use molecule_specs
   use interpolation
 
@@ -11,7 +11,7 @@ interface
   real(kind=8), dimension(:), intent(inout) :: RawWeightTemp
   real(kind=8), dimension(:), intent(in) :: r
   type (neighbour_list), intent(out) :: neigh
-  logical, intent(in) :: update
+  logical, intent(in) :: inner_update,outer_update
 
   end subroutine
 end interface

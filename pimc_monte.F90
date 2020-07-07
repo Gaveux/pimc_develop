@@ -149,7 +149,7 @@ module path_integral_monte_carlo
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 #if POT == 0
-        logical :: inner_update
+        logical :: inner_update, outer_update
 #endif
     
         !print the pimc parameters out
@@ -249,11 +249,14 @@ module path_integral_monte_carlo
                             ! check whether updating outer neighbour list
                             if (pot%interp%outneigh_update==1) then
                                 outer_update = .TRUE.
-                            elseif (mod(iter,pot%interp%outneigh_update)==1) then
-                                outer_update = .FALSE.
+                            else
+                               if (mod(iter,pot%interp%outneigh_update)==1) then
+                                  outer_update = .TRUE.
+                               else
+                                  outer_update = .FALSE.
+                               endif
                             endif
 
-                            !print *, iblock, iter, iatom, imove, ind
                             ! check whether updating inner neighbour list
                             if (pot%interp%inneigh_update==1) then
                                 inner_update = .TRUE.
@@ -264,6 +267,7 @@ module path_integral_monte_carlo
                                     inner_update = .FALSE.
                                 endif
                             endif
+                           ! print *, iblock, iter, iatom, imove, ind, outer_update, inner_update
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr&
 &,Beads(ind)%dVdx,iatom,inner_update,outer_update)

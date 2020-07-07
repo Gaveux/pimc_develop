@@ -16,25 +16,42 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
   type (neighbour_list), intent(out) :: neigh
 
   integer :: i,j
-  real(kind=8) totsum,tol, tmpWeight
+  real(kind=8) totsum,tol, outertotsum
   logical, intent(in) :: inner_update, outer_update
+ 
+  RawWeightTemp=0.d0
+  RawWeight=0.d0
 
+  ! outer neighbour list defines the partial PES data points
   if (outer_update) then 
+     !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
+     do i=1,interp%ndata
+        RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
+        RawWeight(i) = RawWeightTemp(i)**interp%ipow
+     enddo
+     !$OMP END PARALLEL DO
+     totsum = sum(RawWeight)
      call update_outer_neighlist(interp,neigh,totsum,RawWeight)
   endif
+     !print *, 'outer:', neigh%numOuter
 
   !----------------------------------------------------------
   ! calculate raw weights and totsum in two loops for speed
   !----------------------------------------------------------
-  RawWeight = 0.d0
   !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
-  do i=1,interp%ndata
-     RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
-     RawWeight(i) = RawWeightTemp(i)**interp%ipow
+  do i=1,neigh%numOuter
+     RawWeightTemp(neigh%outer(i)) = 1.0/(sum((r-pot(neigh%outer(i))%r)**2))
+     RawWeight(neigh%outer(i)) = RawWeightTemp(neigh%outer(i))**interp%ipow
   enddo
   !$OMP END PARALLEL DO
-  totsum = sum(RawWeight)
 
+  !!$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
+  !do i=1,interp%ndata
+  !   RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
+  !   RawWeight(i) = RawWeightTemp(i)**interp%ipow
+  !enddo
+  !!$OMP END PARALLEL DO
+  outertotsum = sum(RawWeight)
   
   if (inner_update) then
      !----------------------------------------------------------
@@ -43,7 +60,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
      neigh%numInner=0    ! number of neighbours
      neigh%inner = 0      ! list of (inner) neighbours
 
-     tol = interp%wtol*totsum
+     tol = interp%wtol*outertotsum
      do i=1,interp%ndata
         if (RawWeight(i) > tol) then
           neigh%numInner = neigh%numInner + 1
@@ -51,6 +68,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
         endif
      enddo
   endif
+     !print *, 'inner:', neigh%numInner
 
   !----------------------------------------------------------
 
@@ -84,3 +102,4 @@ subroutine update_outer_neighlist(interp,neigh,totsum,RawWeight)
 
      return
 end subroutine
+

@@ -43,7 +43,7 @@ program pimc90
     character(len=80) :: POT_FILE, IN_INTERP, IN_ATOMPERM
     integer :: iatom = 1
     logical :: inner_update =.TRUE.
-    logical :: outer_update =.FALSE.
+    logical :: outer_update =.TRUE.
 #endif
 
     include 'pimc_setup.int'
