@@ -45,12 +45,6 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
   enddo
   !$OMP END PARALLEL DO
 
-  !!$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight,RawWeightTemp)
-  !do i=1,interp%ndata
-  !   RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
-  !   RawWeight(i) = RawWeightTemp(i)**interp%ipow
-  !enddo
-  !!$OMP END PARALLEL DO
   outertotsum = sum(RawWeight)
   
   if (inner_update) then
@@ -68,13 +62,49 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
         endif
      enddo
   endif
-     !print *, 'inner:', neigh%numInner
-
-  !----------------------------------------------------------
 
   return
 end subroutine
 
+subroutine append_array(neighlist,size_neigh,reset,vec)  
+   use interpolation
+   
+   integer, intent(in) :: size_neigh
+   integer, dimension(size_neigh), intent(in) ::neighlist
+   integer, dimension(size_neigh+1), intent(inout) :: vec
+   integer, dimension(:), allocatable :: temp_neigh
+   integer :: i,j, first_ind, last_ind
+   logical, intent(in) :: reset
+   j = 0
+   
+   !----------------------------------------------------------- 
+   !> append all non-duplicated MSI data points that contribute
+   !> to the potential into an array 
+   !----------------------------------------------------------- 
+   if (reset) then
+      vec=0
+   endif
+
+   allocate(temp_neigh(count(neighlist.ne.0)))
+   temp_neigh=0
+
+   do i=1, size_neigh
+     if (ANY(vec .EQ. neighlist(i))==.FALSE.) then
+        j = j + 1 
+        temp_neigh(j) = neighlist(i) 
+     endif
+   enddo
+   
+   first_ind = count(vec.NE.0)+1
+   last_ind = count(vec.NE.0)+count(temp_neigh.ne.0)
+   do i=first_ind, last_ind 
+      j=i-first_ind+1
+      vec(i) = temp_neigh(j)
+   enddo
+
+   deallocate(temp_neigh)
+   return
+end subroutine
 
 subroutine update_outer_neighlist(interp,neigh,totsum,RawWeight)
      use interpolation

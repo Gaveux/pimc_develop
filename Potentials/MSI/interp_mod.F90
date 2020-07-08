@@ -77,7 +77,7 @@ contains
     type (pot_data_point) :: this
     integer, intent(in) :: n, natom
     integer :: nbond,nint,ierr
-    nbond = n*(n-1)/2  ! n is number of atoms
+    nbond = natom*(natom-1)/2  ! n is number of atoms
     if (n > 2) then
        nint = 3*natom-6
     else

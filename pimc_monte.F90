@@ -149,7 +149,9 @@ module path_integral_monte_carlo
         integer :: first_moved,last_moved
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 #if POT == 0
-        logical :: inner_update, outer_update
+        logical :: inner_update, outer_update, reset
+        integer :: size_neigh
+        integer, dimension(pot%interp%ndata+1) :: non_dupl_inner, non_dupl_outer
 #endif
     
         !print the pimc parameters out
@@ -214,11 +216,11 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
-            print *, iblock
+            !print *, iblock
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
-           
+                reset = .TRUE. 
                 do iatom=1,pimc%atom_pass
                     do imove=1,pimc%num_moves
                         atom_move=.false.
@@ -267,15 +269,23 @@ module path_integral_monte_carlo
                                     inner_update = .FALSE.
                                 endif
                             endif
-                           ! print *, iblock, iter, iatom, imove, ind, outer_update, inner_update
+                            !print *, iblock, iter, iatom, imove, ind, outer_update, inner_update
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr&
 &,Beads(ind)%dVdx,iatom,inner_update,outer_update)
+                            !print *, pot%neighlist(iatom,ind)%inner
+                            !print *, 'size of neighlist is ', pot%neighlist(iatom,ind)%numInner
+                            call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata,reset,non_dupl_inner)
+                            call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
+                            !print *, non_dupl
+                            !print *, ''
+                            reset=.FALSE.
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
 #endif
                         enddo
+                        !call exit(0)
 #ifdef FREE_ENERGY
                         !Unscale the coordinates so the rest proceeds as normal
                         if (pimc%free%free_type == 0.and. pimc%doFree==1) then
@@ -357,6 +367,10 @@ module path_integral_monte_carlo
                     endif
                 endif
 #endif      
+#if pot == 0
+            print *, 'inner',count(non_dupl_inner.NE.0)
+            print *, 'outer',count(non_dupl_outer.NE.0)
+#endif
             enddo
 
             !End of the step
