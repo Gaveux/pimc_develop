@@ -231,7 +231,7 @@ module path_integral_monte_carlo
             if (iblock.eq.pimc%BlocksToEquil+1) then
                 equil=.FALSE. ! equail becomes false when the MC becomes equilibrated
             endif
-            !print *, iblock
+            print *, iblock
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
@@ -297,7 +297,9 @@ module path_integral_monte_carlo
                             !print *, 'size of neighlist is ', pot%neighlist(iatom,ind)%numInner
                             if (equil==.FALSE.) then
                                call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata,reset,non_dupl_inner)
-                               call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
+                               if (pot%interp%outer_disable==.FALSE.) then
+                                  call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
+                               endif
                                reset=.FALSE.
                             endif
 #else

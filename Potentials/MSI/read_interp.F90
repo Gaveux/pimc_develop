@@ -67,10 +67,10 @@ subroutine read_interp(interp, filename)
    read(7,*)    interp%inneigh_update, interp%outneigh_update
    write(11,*)  interp%inneigh_update, interp%outneigh_update
    
-   if (interp%inneigh_update.GT.interp%outneigh_update) then
-      print *, 'ERROR: inner neighbour list must update more often than outer neighbour list' 
-      call exit(1)
-   elseif (interp%inneigh_update.EQ.interp%outneigh_update) then
+   !if (interp%inneigh_update.GT.interp%outneigh_update) then
+   !   print *, 'ERROR: inner neighbour list must update more often than outer neighbour list' 
+   !   call exit(1)
+   if (interp%inneigh_update.EQ.interp%outneigh_update) then
       !if (interp%inneigh_update.EQ.1) then
          print *, 'update frequency for inner and outer neighbour list cannot be equal'
          call exit(1)
