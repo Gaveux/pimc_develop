@@ -11,6 +11,7 @@ module interpolation
     real(kind=8) :: wtol,outer,vmax, vmin, sigma
     real(kind=8) :: avrads
     integer, dimension(:,:), pointer :: aperm, bperm
+    logical :: outer_disable
   end type interp_params
   !---------------------------------------
   ! an ab initio data point 

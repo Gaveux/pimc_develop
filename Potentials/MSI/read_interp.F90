@@ -54,10 +54,13 @@ subroutine read_interp(interp, filename)
    read(7,*)    interp%wtol, interp%outer
    write(11,*)  interp%wtol, interp%outer
 
-   !if (interp%wtol.LE.interp%outer) then
-   !   print *, 'ERROR: inner neighbour list weight-cutoff must be larger than that of outer nbeighbour list'
-   !   call exit(0)
-   !endif
+   if (interp%wtol==1.d0) then
+      print *, 'inner neighbour list is the same as outer neighbour list'
+      print *, 'outer is disabled for better perforamnce'
+      interp%outer_disable = .TRUE.
+   else
+      interp%outer_disable = .FALSE.
+   endif
 
    read(7,80)   comment_line
    write(11,81) comment_line
@@ -66,11 +69,11 @@ subroutine read_interp(interp, filename)
    
    if (interp%inneigh_update.GT.interp%outneigh_update) then
       print *, 'ERROR: inner neighbour list must update more often than outer neighbour list' 
-      call exit(0)
+      call exit(1)
    elseif (interp%inneigh_update.EQ.interp%outneigh_update) then
       !if (interp%inneigh_update.EQ.1) then
          print *, 'update frequency for inner and outer neighbour list cannot be equal'
-         call exit(0)
+         call exit(1)
          !print *, 'inner and outer neighbour lists are updated every step'
       !else
         

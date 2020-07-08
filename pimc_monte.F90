@@ -150,8 +150,10 @@ module path_integral_monte_carlo
         integer :: j,k, NumBlocksLeft, BlocksToEquilLeft
 #if POT == 0
         logical :: inner_update, outer_update, reset
-        integer :: size_neigh
+        integer :: size_neigh, val, ierr, array_size
         integer, dimension(pot%interp%ndata+1) :: non_dupl_inner, non_dupl_outer
+        integer, dimension(:), allocatable :: inner_neighbour_array, outer_neighbour_array
+        val = 0
 #endif
     
         !print the pimc parameters out
@@ -208,6 +210,19 @@ module path_integral_monte_carlo
 
         acctot=0.0
         moveacctot=0.0
+
+#if POT == 0
+        ! allocate the neighbour_array
+        array_size=(pimc%NumBlocks-pimc%BlocksToEquil)*pimc%StepsPerBlock
+        allocate(inner_neighbour_array(array_size),stat=ierr)
+        if (ierr.NE.0) stop 'Error allocating inner neighbour_array in pimc_monte.F90'
+        inner_neighbour_array=0
+        if (pot%interp%outer_disable==.FALSE.) then
+           allocate(outer_neighbour_array(array_size),stat=ierr)
+           if (ierr.NE.0) stop 'Error allocating outer neighbour_array in pimc_monte.F90'
+           outer_neighbour_array=0
+        endif
+#endif
  
         !Start the main monte carlo loop
         do iblock=1,pimc%NumBlocks
@@ -220,7 +235,12 @@ module path_integral_monte_carlo
 
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
+#if POT == 0
+                if (equil == .FALSE.) then
                 reset = .TRUE. 
+                val = val+1
+                endif
+#endif
                 do iatom=1,pimc%atom_pass
                     do imove=1,pimc%num_moves
                         atom_move=.false.
@@ -275,11 +295,11 @@ module path_integral_monte_carlo
 &,Beads(ind)%dVdx,iatom,inner_update,outer_update)
                             !print *, pot%neighlist(iatom,ind)%inner
                             !print *, 'size of neighlist is ', pot%neighlist(iatom,ind)%numInner
-                            call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata,reset,non_dupl_inner)
-                            call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
-                            !print *, non_dupl
-                            !print *, ''
-                            reset=.FALSE.
+                            if (equil==.FALSE.) then
+                               call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata,reset,non_dupl_inner)
+                               call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
+                               reset=.FALSE.
+                            endif
 #else
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
@@ -368,8 +388,14 @@ module path_integral_monte_carlo
                 endif
 #endif      
 #if pot == 0
-            print *, 'inner',count(non_dupl_inner.NE.0)
-            print *, 'outer',count(non_dupl_outer.NE.0)
+            if (equil==.FALSE.) then
+               !print *, 'inner',count(non_dupl_inner.NE.0)
+               !print *, 'outer',count(non_dupl_outer.NE.0)
+               inner_neighbour_array(val) = count(non_dupl_inner.NE.0)
+               if (pot%interp%outer_disable==.FALSE.) then
+                  outer_neighbour_array(val) = count(non_dupl_outer.NE.0)
+               endif
+            endif
 #endif
             enddo
 
@@ -437,6 +463,20 @@ module path_integral_monte_carlo
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
+#if POT == 0
+        !print *, 'inner neighbour array'
+        !print *, inner_neighbour_array
+        !print *, 'outer neighbour array'
+        !print *, outer_neighbour_array
+        !array_size 
+        print *, '----------inner neighbour list size-----------------'
+        call num_neigh(inner_neighbour_array,array_size)
+        if (pot%interp%outer_disable==.FALSE.) then
+           print *, '----------outer neighbour list size-----------------'
+           call num_neigh(outer_neighbour_array,array_size) 
+        endif
+#endif
+
 #ifdef FREE_ENERGY
         if(pimc%doSample==1) then
 #endif
