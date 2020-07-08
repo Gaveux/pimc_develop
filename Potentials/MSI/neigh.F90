@@ -45,7 +45,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
         neigh%numInner=0    ! number of neighbours
         neigh%inner = 0      ! list of (inner) neighbours
 
-        tol = interp%wtol*totsum
+        tol = interp%outer*totsum
         do i=1,interp%ndata
            if (RawWeight(i) > tol) then
              neigh%numInner = neigh%numInner + 1

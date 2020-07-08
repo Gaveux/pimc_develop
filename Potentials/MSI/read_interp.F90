@@ -55,8 +55,8 @@ subroutine read_interp(interp, filename)
    write(11,*)  interp%wtol, interp%outer
 
    if (interp%wtol==1.d0) then
-      print *, 'inner neighbour list is the same as outer neighbour list'
-      print *, 'outer is disabled for better perforamnce'
+      print *, 'inner and outer neighbour list share the same weight cutoff'
+      print *, 'hence outer neighbour list is disabled for better performance'
       interp%outer_disable = .TRUE.
    else
       interp%outer_disable = .FALSE.
