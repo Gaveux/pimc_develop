@@ -8,7 +8,7 @@ module interpolation
     integer :: ipart,inneigh_update,nneigh,ngroup
     integer :: ipow,lowp, ipow2,outneigh_update
     integer :: ndata,nforc
-    real(kind=8) :: wtol,outer,vmax, vmin, sigma
+    real(kind=8) :: wtol,wouter,vmax, vmin, sigma
     real(kind=8) :: avrads
     integer, dimension(:,:), pointer :: aperm, bperm
     logical :: outer_disable

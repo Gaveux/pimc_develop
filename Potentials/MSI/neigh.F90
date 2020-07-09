@@ -39,19 +39,21 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
      totsum = sum(RawWeight)
      
      if (outer_update) then
-        !----------------------------------------------------------
-        !  build the inner neighbour list
-        !----------------------------------------------------------
-        neigh%numInner=0    ! number of neighbours
-        neigh%inner = 0      ! list of (inner) neighbours
+        !!----------------------------------------------------------
+        !!  build the inner neighbour list
+        !!----------------------------------------------------------
+        !neigh%numInner=0    ! number of neighbours
+        !neigh%inner = 0      ! list of (inner) neighbours
 
-        tol = interp%outer*totsum
-        do i=1,interp%ndata
-           if (RawWeight(i) > tol) then
-             neigh%numInner = neigh%numInner + 1
-             neigh%inner(neigh%numInner) = i
-           endif
-        enddo
+        !tol = interp%wouter*totsum
+        !do i=1,interp%ndata
+        !   if (RawWeight(i) > tol) then
+        !     neigh%numInner = neigh%numInner + 1
+        !     neigh%inner(neigh%numInner) = i
+        !   endif
+        !enddo
+        
+        call update_neighbour_list(interp%wouter,totsum,neigh%inner,neigh%numInner,interp%ndata,RawWeight)
      endif
 
   else
@@ -63,8 +65,10 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
            RawWeight(i) = RawWeightTemp(i)**interp%ipow
         enddo
         !$OMP END PARALLEL DO
+
         totsum = sum(RawWeight)
-        call update_outer_neighlist(interp,neigh,totsum,RawWeight)
+        !call update_outer_neighlist(interp,neigh,totsum,RawWeight)
+        call update_neighbour_list(interp%wouter,totsum,neigh%outer,neigh%numOuter,interp%ndata,RawWeight) 
      endif
         !print *, 'outer:', neigh%numOuter
 
@@ -84,16 +88,20 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
         !----------------------------------------------------------
         !  build the inner neighbour list
         !----------------------------------------------------------
-        neigh%numInner=0    ! number of neighbours
-        neigh%inner = 0      ! list of (inner) neighbours
+        !neigh%numInner=0    ! number of neighbours
+        !neigh%inner = 0      ! list of (inner) neighbours
 
-        tol = interp%wtol*outertotsum
-        do i=1,interp%ndata
-           if (RawWeight(i) > tol) then
-             neigh%numInner = neigh%numInner + 1
-             neigh%inner(neigh%numInner) = i
-           endif
-        enddo
+        !tol = interp%wtol*outertotsum
+        !do i=1,interp%ndata
+        !   if (RawWeight(i) > tol) then
+        !     neigh%numInner = neigh%numInner + 1
+        !     neigh%inner(neigh%numInner) = i
+        !   endif
+        !enddo
+        !print *, neigh%numInner
+        !print *, neigh%inner  
+        !print *, '----------------------------------------------------'
+        call update_neighbour_list(interp%wtol,outertotsum,neigh%inner,neigh%numInner,interp%ndata,RawWeight)
      endif
 
   endif
@@ -101,6 +109,30 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp,inner_update
   return
 end subroutine
 
+subroutine update_neighbour_list(wcutoff,totsum,inner,numInner,ndata,RawWeight)
+  
+  implicit none
+  real(kind=8), intent(in) :: wcutoff, totsum
+  real(kind=8), intent(in) :: RawWeight(1)
+  integer, intent(in) :: ndata
+  integer, dimension(ndata), intent(out) :: inner
+  integer, intent(out) :: numInner
+  real(kind=8) :: tol
+  integer :: i
+
+  numInner=0
+  inner=0
+  
+  tol= wcutoff*totsum
+  do i=1, ndata
+     if (RawWeight(i) > tol) then 
+         numInner = numInner + 1
+         inner(numInner) = i
+     endif
+  enddo
+  
+  return
+end subroutine
 subroutine append_array(neighlist,size_neigh,reset,vec)  
    use interpolation
    
@@ -141,32 +173,32 @@ subroutine append_array(neighlist,size_neigh,reset,vec)
    return
 end subroutine
 
-subroutine update_outer_neighlist(interp,neigh,totsum,RawWeight)
-     use interpolation
-     
-     type(interp_params), intent(in) :: interp
-     type(neighbour_list), intent(out) :: neigh 
-     real(kind=8), dimension(interp%ndata), intent(in) :: RawWeight
-     real(kind=8), intent(in) :: totsum
-     real(kind=8) :: outtol
-
-     integer :: i
-
-     !---------------------------------------------------------
-     ! build the outer neighbour list
-     !---------------------------------------------------------
-     neigh%numOuter=0
-     neigh%outer=0
-     outtol=interp%outer*totsum
-     do i=1,interp%ndata
-        if (RawWeight(i) > outtol) then
-            neigh%numOuter = neigh%numOuter + 1
-            neigh%outer(neigh%numOuter) = i
-        endif
-     enddo
-
-     return
-end subroutine
+!subroutine update_outer_neighlist(interp,neigh,totsum,RawWeight)
+!     use interpolation
+!     
+!     type(interp_params), intent(in) :: interp
+!     type(neighbour_list), intent(out) :: neigh 
+!     real(kind=8), dimension(interp%ndata), intent(in) :: RawWeight
+!     real(kind=8), intent(in) :: totsum
+!     real(kind=8) :: outtol
+!
+!     integer :: i
+!
+!     !---------------------------------------------------------
+!     ! build the outer neighbour list
+!     !---------------------------------------------------------
+!     neigh%numOuter=0
+!     neigh%outer=0
+!     outtol=interp%wouter*totsum
+!     do i=1,interp%ndata
+!        if (RawWeight(i) > outtol) then
+!            neigh%numOuter = neigh%numOuter + 1
+!            neigh%outer(neigh%numOuter) = i
+!        endif
+!     enddo
+!
+!     return
+!end subroutine
 
 
 !function(array,array_size) result(mean,std)

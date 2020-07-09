@@ -51,8 +51,8 @@ subroutine read_interp(interp, filename)
 
    read(7,80)   comment_line
    write(11,81) comment_line
-   read(7,*)    interp%wtol, interp%outer
-   write(11,*)  interp%wtol, interp%outer
+   read(7,*)    interp%wtol, interp%wouter
+   write(11,*)  interp%wtol, interp%wouter
 
    if (interp%wtol==1.d0) then
       print *, 'inner and outer neighbour list share the same weight cutoff'
