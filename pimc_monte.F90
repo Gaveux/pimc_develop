@@ -296,9 +296,11 @@ module path_integral_monte_carlo
                             !print *, pot%neighlist(iatom,ind)%inner
                             !print *, 'size of neighlist is ', pot%neighlist(iatom,ind)%numInner
                             if (equil==.FALSE.) then
-                               call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata,reset,non_dupl_inner)
+                               call append_array(pot%neighlist(iatom,ind)%inner,pot%interp%ndata&
+&,reset,non_dupl_inner,pot%interp%ngroup)
                                if (pot%interp%outer_disable==.FALSE.) then
-                                  call append_array(pot%neighlist(iatom,ind)%outer,pot%interp%ndata,reset,non_dupl_outer)
+                                  call append_array(pot%neighlist(iatom,ind)%outer,pot%inte&
+&rp%ndata,reset,non_dupl_outer,pot%interp%ngroup)
                                endif
                                reset=.FALSE.
                             endif

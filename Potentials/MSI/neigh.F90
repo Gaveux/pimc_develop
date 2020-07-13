@@ -133,14 +133,19 @@ subroutine update_neighbour_list(wcutoff,totsum,inner,numInner,ndata,RawWeight)
   
   return
 end subroutine
-subroutine append_array(neighlist,size_neigh,reset,vec)  
+
+subroutine append_array(neighlist,size_neigh,reset,vec,ngroup)  
    use interpolation
    
-   integer, intent(in) :: size_neigh
+   integer, intent(in) :: size_neigh, ngroup
    integer, dimension(size_neigh), intent(in) ::neighlist
+   ! DO NOT change the dimension of vec, the redundant element 
+   ! prevents 0 being counted when checking duplicates
    integer, dimension(size_neigh+1), intent(inout) :: vec
    integer, dimension(:), allocatable :: temp_neigh
    integer :: i,j, first_ind, last_ind
+   integer, dimension(size_neigh) :: neighlist_copy1
+   integer, dimension(size_neigh) :: neighlist_copy2
    logical, intent(in) :: reset
    j = 0
    
@@ -154,11 +159,29 @@ subroutine append_array(neighlist,size_neigh,reset,vec)
 
    allocate(temp_neigh(count(neighlist.ne.0)))
    temp_neigh=0
+   neighlist_copy1 = 0
+   neighlist_copy2 = 0
 
+   do i=1,count(neighlist.NE.0)
+      if (neighlist(i)==size_neigh) then
+         neighlist_copy1(i) = neighlist(i)/ngroup 
+      else
+         neighlist_copy1(i) = (neighlist(i)/ngroup)+1
+      endif
+   enddo
+
+   do i=1,count(neighlist.NE.0)
+      if (ANY(neighlist_copy2 .EQ. neighlist_copy1(i))==.FALSE.) then
+         j=j+1
+         neighlist_copy2(j)=neighlist_copy1(i)
+      endif
+   enddo
+
+   j=0
    do i=1, size_neigh
-     if (ANY(vec .EQ. neighlist(i))==.FALSE.) then
+     if (ANY(vec .EQ. neighlist_copy2(i))==.FALSE.) then
         j = j + 1 
-        temp_neigh(j) = neighlist(i) 
+        temp_neigh(j) = neighlist_copy2(i) 
      endif
    enddo
    
