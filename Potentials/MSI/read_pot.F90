@@ -68,8 +68,6 @@
         do j=1,sys%nint
            read(3,*) (pot(i)%ut(j,k),k=1,sys%nbond)
         enddo
-        print *, pot(1)%ut
-        print *, 'size of ut is ', size(pot(1)%ut)
         read(3,*)   pot(i)%v0
         read(3,*)  (pot(i)%v1(j),j=1,sys%nint)
         read(3,*)  (pot(i)%v2(j),j=1,sys%nint)
