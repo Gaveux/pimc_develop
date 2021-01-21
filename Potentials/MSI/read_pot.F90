@@ -48,7 +48,7 @@
 
       do i=1,interp%ndata
         !print *, ' allocating pot(',i,')'
-         call new(pot(i),sys%nbond)
+         call new(pot(i),sys%natom)
       enddo
 
 !  rewind and do a formatted read
@@ -68,6 +68,8 @@
         do j=1,sys%nint
            read(3,*) (pot(i)%ut(j,k),k=1,sys%nbond)
         enddo
+        print *, pot(1)%ut
+        print *, 'size of ut is ', size(pot(1)%ut)
         read(3,*)   pot(i)%v0
         read(3,*)  (pot(i)%v1(j),j=1,sys%nint)
         read(3,*)  (pot(i)%v2(j),j=1,sys%nint)
@@ -135,7 +137,7 @@
       if (ierr.ne.0) stop ' Error allocating allpot '
 
       do i=1,interp%ndata*interp%ngroup
-         call new(allpot(i),sys%nbond)
+         call new(allpot(i),sys%natom)
       enddo
 
       ! copy permuted data into new array, checking for and 

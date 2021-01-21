@@ -100,6 +100,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,ddr_Fsqr)
     !  Evaluate (z-z0) the local internal coordinates
     !---------------------------------------------------
     z = 0.0
+    ! nbond =N(N-1)/2, nint=3N-6
     do k=1,neigh%numInner
         do j = 1,sys%nbond
             do i = 1,sys%nint
@@ -154,6 +155,10 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,ddr_Fsqr)
           enddo
         enddo
     enddo
+    print *, '--------------------------------------------------'
+    print *, matmul(pot(1)%ut,pot(1)%ut)
+    !print *, shape(matmul(pot(1)%ut,pot(1)%ut))
+    call exit(0)
    
     ! derivative of the Taylor polynomial w.r.t r^-1
     do j=1,sys%nbond
