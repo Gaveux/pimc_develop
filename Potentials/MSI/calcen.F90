@@ -185,8 +185,12 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,ddr_Fsqr)
     ddr_Fsqr = 0.0
     do k=1,neigh%numInner
         do i=1,sys%nbond
-            ddr_Fsqr(i) = ddr_Fsqr(i) + 2.0*dVdR(i)*(Tay(k)*D2Weight(i,k)+Weight(k)*d2TaydR2(k,i)+2.0*dTaydR(k,i)*DWeight(i,k))
+            ddr_Fsqr(i) = ddr_Fsqr(i) + (Tay(k)*D2Weight(i,k)+Weight(k)*d2TaydR2(k,i)+2.0*dTaydR(k,i)*DWeight(i,k))
         enddo
+    enddo
+
+    do i=1,sys%nbond
+           ddr_Fsqr(i) = 2.0*ddr_Fsqr(i)*dVdR(i)
     enddo
     
     V = energy 
