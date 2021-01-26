@@ -45,13 +45,31 @@
               
             !derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr
+            !second derivative of bondlengths w.r.t. Cartesians
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: d2r
+            !derivative of bondlengths w.r.t. Cartesians squared
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr2
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Dummy variables for Weight, RawWeightTemp is Weight^-p
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
             !derivative of |F|^2 w.r.t. inverse bonde lengths
-            real(kind=8), dimension(param%sys%nbond) :: ddr_Fsqr
+            !real(kind=8), dimension(param%sys%nbond) :: ddr_Fsqr
+
+            ! sum d2wdx2Tay
+            !real(kind=8), dimension(param%sys%dimen,param%sys%natom),intent(out) :: d2wdx2Tay
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: d2wdx2Tay
+            
+            ! 6 terms in d2wdx2tay
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight1
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight2
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight3
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight4
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight5
+            real(kind=8), dimension(param%sys%nbond) :: SumD2Weight6
+
+
 
             
             integer :: j,k
@@ -59,7 +77,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr)
+            call intern(param%sys,x,r,dr,d2r,dr2)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
@@ -69,7 +87,7 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,ddr_Fsqr)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6)
             !endif
 
             V = V - param%interp%vmin
@@ -79,21 +97,28 @@
             !    enddo
             !enddo
             dV = 0.0
-            dFsqr = 0.0
+            !dFsqr = 0.0
+            d2wdx2Tay = 0.d0
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
                     dV(k,param%sys%mb(j)) = dV(k,param%sys%mb(j))+dVdR(j)* & 
                          dr(k,param%sys%mb(j),j)
-                    dFsqr(k,param%sys%mb(j)) = dFsqr(k,param%sys%mb(j)) + &
-                           ddr_Fsqr(j)*dr(k,param%sys%mb(j),j)
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+ & 
                          dVdR(j)*dr(k,param%sys%nb(j),j)
-                    dFsqr(k,param%sys%nb(j)) = dFsqr(k,param%sys%nb(j)) + &
-                           ddr_Fsqr(j)*dr(k,param%sys%nb(j),j)
+
+                    ! d2wdx2*Tay
+                    d2wdx2Tay(k,param%sys%mb(j)) = d2wdx2Tay(k,param%sys%mb(j)) &
+                    + SumD2Weight1(j)*dr2(k,param%sys%mb(j),j) &
+                    + d2r(k,param%sys%mb(j),j)*SumD2Weight2(j) &
+                    + 2.d0*dr2(k,param%sys%mb(j),j)*SumD2Weight3(j) &
+                    - 2.d0*dr2(k,param%sys%mb(j),j)*SumD2Weight4(j) &
+                    + dr2(k,param%sys%mb(j),j)*SumD2Weight5(j) &
+                    - d2r(k,param%sys%mb(j),j)*SumD2Weight6(j)
                 enddo
             enddo
             r=1/r
+            print *, d2wdx2Tay
 !print *, dV
 !print *, ''
 !print *, dFsqr

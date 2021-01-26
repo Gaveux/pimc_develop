@@ -6,10 +6,11 @@ module interpolation
   !---------------------------------------------
   type interp_params
     integer :: ipart,neigh_update,nneigh,ngroup
-    integer :: ipow,lowp, ipow2
+    !integer :: ipow,lowp, ipow2
+    integer :: lowp
     integer :: ndata,nforc
     real(kind=8) :: wtol,outer,vmax, vmin, sigma
-    real(kind=8) :: avrads
+    real(kind=8) :: avrads,ipow,ipow2
     integer, dimension(:,:), pointer :: aperm, bperm
   end type interp_params
   !---------------------------------------
