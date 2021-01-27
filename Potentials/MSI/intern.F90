@@ -20,6 +20,7 @@ subroutine intern(sys,x,r,dr,d2r,dr2)
     enddo
 
     dr=0.0d0
+    dr2=0.0d0
     
     do j=1,sys%dimen
         do i=1,sys%nbond
@@ -30,6 +31,7 @@ subroutine intern(sys,x,r,dr,d2r,dr2)
         enddo
     enddo
 
+    d2r=0.0d0
     do j=1,sys%dimen
        do i=1,sys%nbond
            !d2r(j,sys%mb(i),i) = -r(i)*dr(j,sys%mb(i),i)**2 + r(i)

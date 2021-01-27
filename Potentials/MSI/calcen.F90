@@ -1,6 +1,8 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight1,&
+SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6,SumWeightd2Taydx2tmp1,&
+SumWeightd2Taydx2tmp2,SumWeightd2Taydx2tmp3,dwdrdTaydrtmp1,dwdrdTaydrtmp2) 
     use molecule_specs
     use interpolation
 
@@ -25,7 +27,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
     real(kind=8), dimension(sys%nbond,size(Weight)) :: DWeight
     real(kind=8), dimension(sys%nbond,size(Weight)) :: DRawWeight
     real(kind=8), dimension(size(Weight),sys%nbond) :: dTaydR
-    !real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2
     real(kind=8), dimension(sys%nbond,size(Weight)) :: D2RawWeight
     !real(kind=8), dimension(sys%nbond,size(Weight)) :: D2Weight
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
@@ -54,12 +55,17 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
     real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight4
     real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight5
     real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight6
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight1
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight2
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight3
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight4
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight5
-    !real(kind=8), dimension(sys%nbond) :: SumD2Weight6
+
+    ! d2Taydr2 split into 2 terms
+    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp1
+    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp2
+    ! sum w*d2Taydr2
+    real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp1
+    real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp2
+    real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp3
+    ! sum dwdr*dTaydr
+    real(kind=8), dimension(sys%nbond), intent(out) :: dwdrdTaydrtmp1
+    real(kind=8), dimension(sys%nbond), intent(out) :: dwdrdTaydrtmp2
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -111,12 +117,17 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
     !!$OMP END PARALLEL DO
     
     SumDRawWeight = 0.0
+    SumD2WeightTmp3 = 0.0
+    SumD2WeightTmp4 = 0.0
+    SumD2WeightTmp5 = 0.0
+    SumD2WeightTmp6 = 0.0
     !SumD2RawWeight = 0.0
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(SumDWeight,DWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
             SumDRawWeight(i) = SumDRawWeight(i) + DRawWeight(i,k)
             !SumD2RawWeight(i) = SumD2RawWeight(i) + D2RawWeight(i,k)
+
             SumD2WeightTmp3(i) = SumD2WeightTmp3(i) + D2WeightTmp3(i,k)
             SumD2WeightTmp4(i) = SumD2WeightTmp4(i) + D2WeightTmp4(i,k)
             SumD2WeightTmp5(i) = SumD2WeightTmp5(i) + D2WeightTmp5(i,k)
@@ -133,7 +144,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
             !D2Weight(i,k) = 2.0*(Weight(k)*SumDRawWeight(i)**2 - DRawWeight(i,k)*SumDRawWeight(i)) &
             !        + invTotsum*(D2RawWeight(i,k)-Weight(k)*SumD2RawWeight(i))
             D2Weight3(i,k) = SumD2WeightTmp3(i)*Weight(k)
-            D2Weight4(i,k) = SumD2WeightTmp4(i)*DRawWeight(i,k)
+            D2Weight4(i,k) = SumD2WeightTmp4(i)*DRawWeight(i,k) 
             D2Weight5(i,k) = SumD2WeightTmp5(i)*Weight(k)
             D2Weight6(i,k) = SumD2WeightTmp6(i)*Weight(k)
         enddo
@@ -150,7 +161,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
         do j = 1,sys%nbond
             do i = 1,sys%nint
                 z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
-                !rdzdr(i,k) = rdzdr(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)**2
             enddo
         enddo
     enddo
@@ -191,42 +201,52 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
         enddo
     enddo
 
-    ! ut(i,j) sum in nint
-    !do j=1,sys%nbond
-    !    do k=1,neigh%numInner
-    !    d2TaydR2(k,j) = 0.0
-    !      do i=1,sys%nint
-    !         d2TaydR2(k,j) = d2TaydR2(k,j) + pot(neigh%inner(k))%ut(i,j)
-    !      enddo
-    !    enddo
-    !enddo
-    !print *, '--------------------------------------------------'
-    !print *, matmul(pot(1)%ut,pot(1)%ut)
-    !print *, shape(matmul(pot(1)%ut,pot(1)%ut))
-    !call exit(0)
-   
-    ! derivative of the Taylor polynomial w.r.t r^-1
+    ! derivative of the Taylor polynomial w.r.t bondlength(sys%nbond)
     do j=1,sys%nbond
         temp = -r(j)**2
-        temp2 = r(j)**3
         do k=1,neigh%numInner
             dTaydR(k,j) = 0.0
+            d2TaydR2tmp1(k,j) = 0.0
+            d2TaydR2tmp2(k,j) = 0.0
             do i=1,sys%nint
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
-                !d2TaydR2(k,j) = d2TaydR2(k,j)*(pot(neigh%inner(k))%ut(i,j)*pot(neigh%inner(k))%v2(i)*r(j) + 2.0*DTay(i,k))
+                d2TaydR2tmp1(k,j) = d2TaydR2tmp1(k,j) + pot(neigh%inner(k))%v2(i)*pot(neigh%inner(k))%ut(i,j)**2
             enddo
             dTaydR(k,j) = dTaydR(k,j)*temp
-            !d2TaydR2(k,j) = d2TaydR2(k,j)*temp2
+            d2TaydR2tmp1(k,j) = d2TaydR2tmp1(k,j)*temp**2
         enddo
+    enddo 
+
+    do j=1,sys%nbond
+       do k=1,neigh%numInner
+            d2TaydR2tmp2(k,j) = -dTaydR(k,j)*r(j)
+       enddo
     enddo
+    
    
     ! gradient of the energy
+    ! summation of ndata is handled here
     dVdR = 0.0
     do k=1,neigh%numInner
         do i=1,sys%nbond
             dVdR(i) = dVdR(i) + Tay(k)*DWeight(i,k) + Weight(k)*dTaydR(k,i)
         enddo
     enddo
+
+    ! sum dwdr*dTaydr
+    dwdrdTaydrtmp1 = 0.0
+    dwdrdTaydrtmp2 = 0.0
+    do k=1,neigh%numInner
+        do i=1,sys%nbond
+            dwdrdTaydrtmp1(i) = dwdrdTaydrtmp1(i) + DRawWeight(i,k)*dTaydR(k,i)
+            dwdrdTaydrtmp2(i) = dwdrdTaydrtmp2(i) + Weight(k)*dTaydR(k,i)
+        enddo
+    enddo
+
+    do i=1,sys%nbond
+        dwdrdTaydrtmp2(i) = dwdrdTaydrtmp2(i)*SumDRawWeight(i)
+    enddo
+    
 
     ! sum d2wdr2*Tay
     SumD2Weight1=0.d0
@@ -245,16 +265,18 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
            SumD2Weight6(i) = SumD2Weight6(i) + d2Weight6(i,k)*Tay(k)
        enddo
     enddo
-    !ddr_Fsqr = 0.0
-    !do k=1,neigh%numInner
-    !    do i=1,sys%nbond
-    !        ddr_Fsqr(i) = ddr_Fsqr(i) + (Tay(k)*D2Weight(i,k)+Weight(k)*d2TaydR2(k,i)+2.0*dTaydR(k,i)*DWeight(i,k))
-    !    enddo
-    !enddo
 
-    !do i=1,sys%nbond
-    !       ddr_Fsqr(i) = 2.0*ddr_Fsqr(i)*dVdR(i)
-    !enddo
+    ! sum w*d2Taydr2
+    SumWeightd2Taydx2tmp1=0.d0
+    SumWeightd2Taydx2tmp2=0.d0
+    SumWeightd2Taydx2tmp3=0.d0
+    do k=1,neigh%numInner
+       do i=1,sys%nbond
+          SumWeightd2Taydx2tmp1(k) = SumWeightd2Taydx2tmp1(k) + Weight(k)*d2TaydR2tmp1(k,i)  
+          SumWeightd2Taydx2tmp2(k) = SumWeightd2Taydx2tmp2(k) + 2.d0*Weight(k)*d2TaydR2tmp2(k,i)  
+          SumWeightd2Taydx2tmp3(k) = SumWeightd2Taydx2tmp3(k) + Weight(k)*dTaydR(k,i)
+       enddo
+    enddo
     
     V = energy 
   return

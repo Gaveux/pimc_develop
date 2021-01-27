@@ -1,6 +1,6 @@
 
-interface
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6) 
+interface 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6,SumWeightd2Taydx2tmp1,SumWeightd2Taydx2tmp2,SumWeightd2Taydx2tmp3,dwdrdTaydrtmp1,dwdrdTaydrtmp2) 
 
   use molecule_specs
   use interpolation
@@ -23,6 +23,13 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,SumD2Weight
   real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight4
   real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight5
   real(kind=8), dimension(sys%nbond), intent(out) :: SumD2Weight6
+
+  real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp1
+  real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp2
+  real(kind=8), dimension(sys%nbond), intent(out) :: SumWeightd2Taydx2tmp3
+
+  real(kind=8), dimension(sys%nbond), intent(out) :: dwdrdTaydrtmp1
+  real(kind=8), dimension(sys%nbond), intent(out) :: dwdrdTaydrtmp2
 
   end subroutine calcen
 end interface

@@ -69,10 +69,28 @@
             real(kind=8), dimension(param%sys%nbond) :: SumD2Weight5
             real(kind=8), dimension(param%sys%nbond) :: SumD2Weight6
 
+            ! 3 terms in w*d2Taydx2
+            real(kind=8), dimension(param%sys%nbond) :: SumWeightd2Taydx2tmp1
+            real(kind=8), dimension(param%sys%nbond) :: SumWeightd2Taydx2tmp2
+            real(kind=8), dimension(param%sys%nbond) :: SumWeightd2Taydx2tmp3
 
+            ! w*d2Taydx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: wd2Tay
+
+            ! 2 terms in dwdx*dTaydx
+            real(kind=8), dimension(param%sys%nbond) :: dwdrdTaydrtmp1
+            real(kind=8), dimension(param%sys%nbond) :: dwdrdTaydrtmp2
+            ! dwdx*dTaydx
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dwdxdTaydx
+
+            ! d2Vdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: d2Vdx2
+
+            ! dF^2/dx
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dFsqrdx
 
             
-            integer :: j,k
+            integer :: i,j,k
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
@@ -87,7 +105,11 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3,SumD2Weight4,SumD2Weight5,SumD2Weight6)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind), &
+            Weight,r,V,dVdr,RawWeightTemp,SumD2Weight1,SumD2Weight2,SumD2Weight3, &
+            SumD2Weight4,SumD2Weight5,SumD2Weight6,SumWeightd2Taydx2tmp1,&
+            SumWeightd2Taydx2tmp2,SumWeightd2Taydx2tmp3,dwdrdTaydrtmp1,&
+            dwdrdTaydrtmp2)
             !endif
 
             V = V - param%interp%vmin
@@ -96,15 +118,17 @@
             !        dV(k,j) = 0.d0
             !    enddo
             !enddo
-            dV = 0.0
-            !dFsqr = 0.0
-            d2wdx2Tay = 0.d0
 
+            dV = 0.0
+            d2wdx2Tay = 0.0
+            wd2Tay = 0.0
+            dwdxdTaydx = 0.0
+            d2Vdx2 = 0.0
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
                     dV(k,param%sys%mb(j)) = dV(k,param%sys%mb(j))+dVdR(j)* & 
                          dr(k,param%sys%mb(j),j)
-                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+ & 
+                    dV(k,param%sys%nb(j)) = dV(k,param%sys%nb(j))+ & 
                          dVdR(j)*dr(k,param%sys%nb(j),j)
 
                     ! d2wdx2*Tay
@@ -115,13 +139,65 @@
                     - 2.d0*dr2(k,param%sys%mb(j),j)*SumD2Weight4(j) &
                     + dr2(k,param%sys%mb(j),j)*SumD2Weight5(j) &
                     - d2r(k,param%sys%mb(j),j)*SumD2Weight6(j)
+
+                    d2wdx2Tay(k,param%sys%nb(j)) = d2wdx2Tay(k,param%sys%nb(j)) &
+                    + SumD2Weight1(j)*dr2(k,param%sys%nb(j),j) &
+                    + d2r(k,param%sys%nb(j),j)*SumD2Weight2(j) &
+                    + 2.d0*dr2(k,param%sys%nb(j),j)*SumD2Weight3(j) &
+                    - 2.d0*dr2(k,param%sys%nb(j),j)*SumD2Weight4(j) &
+                    + dr2(k,param%sys%nb(j),j)*SumD2Weight5(j) &
+                    - d2r(k,param%sys%nb(j),j)*SumD2Weight6(j)
+
+                    ! w*d2Taydx2
+                    wd2Tay(k,param%sys%mb(j))=wd2Tay(k,param%sys%mb(j))&
+                    +dr2(k,param%sys%mb(j),j)*SumWeightd2Taydx2tmp1(j) &
+                    +dr2(k,param%sys%mb(j),j)*SumWeightd2Taydx2tmp2(j) &
+                    +d2r(k,param%sys%mb(j),j)*SumWeightd2Taydx2tmp3(j)
+
+                    wd2Tay(k,param%sys%nb(j))=wd2Tay(k,param%sys%nb(j))&
+                    +dr2(k,param%sys%nb(j),j)*SumWeightd2Taydx2tmp1(j) &
+                    +dr2(k,param%sys%nb(j),j)*SumWeightd2Taydx2tmp2(j) &
+                    +d2r(k,param%sys%nb(j),j)*SumWeightd2Taydx2tmp3(j)
+
+                    ! dwdx*dTaydx
+                    dwdxdTaydx(k,param%sys%mb(j))=dwdxdTaydx(k,param%sys%mb(j))&
+                    + dr2(k,param%sys%mb(j),j)*dwdrdTaydrtmp1(j) &
+                    - dr2(k,param%sys%mb(j),j)*dwdrdTaydrtmp2(j)
+
+                    dwdxdTaydx(k,param%sys%nb(j))=dwdxdTaydx(k,param%sys%nb(j))&
+                    + dr2(k,param%sys%nb(j),j)*dwdrdTaydrtmp1(j) &
+                    - dr2(k,param%sys%nb(j),j)*dwdrdTaydrtmp2(j)
+
+                    ! d2Vdx2
+                    d2Vdx2(k,param%sys%mb(j)) = d2Vdx2(k,param%sys%mb(j)) &
+                    + d2wdx2Tay(k,param%sys%mb(j)) + wd2Tay(k,param%sys%mb(j)) &
+                    + dwdxdTaydx(k,param%sys%mb(j))
+
+                    d2Vdx2(k,param%sys%nb(j)) = d2Vdx2(k,param%sys%nb(j)) &
+                    + d2wdx2Tay(k,param%sys%nb(j)) + wd2Tay(k,param%sys%nb(j)) &
+                    + dwdxdTaydx(k,param%sys%nb(j))
                 enddo
             enddo
+            !call exit(0)
+
+            ! d/dx (dV/dx)^2 = 2(dV/dx) d2V/dx2
+            do j=1,param%sys%natom
+               do i=1,param%sys%dimen
+                  dFsqrdx(i,j) = 2.0*dV(i,j)*d2Vdx2(i,j)
+               enddo
+            enddo
+            print *, dFsqrdx
+            print *, '------------------'
+            print *, dV
+
             r=1/r
-            print *, d2wdx2Tay
-!print *, dV
-!print *, ''
-!print *, dFsqr
+           ! print *, dV
+           ! print *, '-------------------------'
+           ! print *, d2wdx2Tay
+           ! print *, '-------------------------'
+           ! print *, wd2Tay
+           !print *, d2Vdx2
+           call exit(0)
            
 
         end subroutine potential
