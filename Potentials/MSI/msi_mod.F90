@@ -88,11 +88,11 @@
                     dV(k,param%sys%mb(j)) = dV(k,param%sys%mb(j))+dVdR(j)* & 
                          dr(k,param%sys%mb(j),j)
                     dFsqr(k,param%sys%mb(j)) = dFsqr(k,param%sys%mb(j)) + &
-                           ddr_Fsqr(j)*d2r(k,param%sys%mb(j),j)
+                           ddr_Fsqr(j)*dr(k,param%sys%mb(j),j)
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+ & 
                          dVdR(j)*dr(k,param%sys%nb(j),j)
                     dFsqr(k,param%sys%nb(j)) = dFsqr(k,param%sys%nb(j)) + &
-                           ddr_Fsqr(j)*d2r(k,param%sys%nb(j),j)
+                           ddr_Fsqr(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
             r=1/r
