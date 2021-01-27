@@ -45,6 +45,8 @@
               
             !derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr
+            !2nd derivative of bondlengths w.r.t. Cartesians
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: d2r
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Dummy variables for Weight, RawWeightTemp is Weight^-p
@@ -59,7 +61,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr)
+            call intern(param%sys,x,r,dr,d2r)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
@@ -86,17 +88,18 @@
                     dV(k,param%sys%mb(j)) = dV(k,param%sys%mb(j))+dVdR(j)* & 
                          dr(k,param%sys%mb(j),j)
                     dFsqr(k,param%sys%mb(j)) = dFsqr(k,param%sys%mb(j)) + &
-                           ddr_Fsqr(j)*dr(k,param%sys%mb(j),j)
+                           ddr_Fsqr(j)*d2r(k,param%sys%mb(j),j)
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+ & 
                          dVdR(j)*dr(k,param%sys%nb(j),j)
                     dFsqr(k,param%sys%nb(j)) = dFsqr(k,param%sys%nb(j)) + &
-                           ddr_Fsqr(j)*dr(k,param%sys%nb(j),j)
+                           ddr_Fsqr(j)*d2r(k,param%sys%nb(j),j)
                 enddo
             enddo
             r=1/r
 !print *, dV
-!print *, ''
+!print *, '------------------------'
 !print *, dFsqr
+!call exit(0)
            
 
         end subroutine potential

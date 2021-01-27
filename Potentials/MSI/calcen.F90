@@ -155,10 +155,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,ddr_Fsqr)
           enddo
         enddo
     enddo
-    print *, '--------------------------------------------------'
-    print *, matmul(pot(1)%ut,pot(1)%ut)
-    !print *, shape(matmul(pot(1)%ut,pot(1)%ut))
-    call exit(0)
    
     ! derivative of the Taylor polynomial w.r.t r^-1
     do j=1,sys%nbond

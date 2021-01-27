@@ -1,12 +1,12 @@
 !Computes the bond length coordinates and the first and second derivatives of these coordinates with respect
 !to cartesians if these values are specified
-subroutine intern(sys,x,r,dr)
+subroutine intern(sys,x,r,dr,d2r)
     use molecule_specs
     type (molsysdat), intent(in) :: sys
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
-    !real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: d2r
+    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: d2r
 
     integer :: i,j
 
