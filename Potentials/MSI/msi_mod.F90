@@ -33,7 +33,7 @@
             ! Cartesian positions of atoms in system
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(in) :: x
             !bond lengths
-            real(kind=8), dimension(param%sys%nbond), intent(inout) :: r 
+            real(kind=8), dimension(param%sys%nbond), intent(inout) :: r
             !Calculated potential energy
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
@@ -43,11 +43,14 @@
             !Variables used internally by the modified shepard code
               
             !derivative of bond lengths with respect to cartesians
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom&
+            ,param%sys%nbond) :: dr
             !derivative of bond lengths with respect to cartesians
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom&
+            ,param%sys%nbond) :: dr2
             !second derivative matrix of bondlengths w.r.t. Cartesians
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom,param%sys%nbond) :: d2r
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen&
+            ,param%sys%natom,param%sys%nbond) :: d2r
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Stores the value of the weight function
@@ -63,14 +66,16 @@
             call intern(param%sys,x,r,dr,dr2,d2r)
 
             !Update the inner neighbour list each potential evaluation
-            call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
+            call neighbour(param%sys,param%interp,param%pot,Weight,r,&
+            param%neighlist(ind),RawWeightTemp)
 
             !Interpolate the surface - currently only the one part weight function is implemented
             !the two part weight function can easily be included, however there will need to be 
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
+            call calcen(param%sys,param%interp,param%pot,&
+            param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
             !endif
 
             V = V - param%interp%vmin
@@ -82,8 +87,10 @@
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
-                    dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)*dr(k,param%sys%mb(j),j)
-                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
+                    dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)&
+                    *dr(k,param%sys%mb(j),j)
+                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)&
+                    *dr(k,param%sys%nb(j),j)
                 enddo
             enddo
             r=1/r
