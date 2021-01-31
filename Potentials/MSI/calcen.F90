@@ -25,12 +25,26 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(size(Weight),sys%nbond) :: dTaydR
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
     real(kind=8), dimension(sys%nbond) :: SumDWeight
-    real(kind=8) :: totsum, energy, temp
+    real(kind=8), dimension(sys%nbond) :: SumDWeightSqr
+    real(kind=8), dimension(sys%nbond) :: Sumd2veightdr2tmp1
+    real(kind=8), dimension(sys%nbond) :: Sumd2veightdr2tmp2
+    real(kind=8) :: totsum, energy, temp, temp2, temp3
+
+    ! for d2Vdx2
+    real(kind=8), dimension(sys%nint,size(Weight)) :: d2TaydR2tmp1
+    real(kind=8), dimension(sys%nint,size(Weight)) :: d2TaydR2tmp2
+
+    ! for d2veightdx2
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp1
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp2
+
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
     !Stores the zeta coordinates of the system
     real(kind=8), dimension(sys%nint,interp%ndata) :: z
+    !Stores the d(eta)/dr
+    real(kind=8), dimension(sys%nint,interp%ndata) :: detadr
     integer :: i,j,k
     
     !---------------------------------------------------
@@ -50,25 +64,36 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     !---------------------------------------------------
    
     ! derivative of raw weights
-    !!$OMP PARALLEL
-    !!$OMP DO
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,temp,r)
     do k=1,neigh%numInner
         temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
+        temp2 = 2.0*temp*RawWeightTemp(k)*(interp%ipow+1.0)
+        temp3 = -temp
         do i=1,sys%nbond
             DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+            d2veightdr2tmp1(i,k) = temp2*(r(i) - pot(neigh%inner(k))%r(i))**2*r(i)**4 
+            d2veightdr2tmp2(i,k) = temp3*(r(i)**4 - (r(i) - pot(neigh%inner(k))%r(i))*r(i)**2)
         enddo
     enddo
     !!$OMP END PARALLEL DO
     
     SumDWeight = 0.0
+    Sumd2veightdr2tmp1 = 0.0
+    Sumd2veightdr2tmp2 = 0.0
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(SumDWeight,DWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
             SumDWeight(i) = SumDWeight(i) + DWeight(i,k)
+            Sumd2veightdr2tmp1(i) = Sumd2veightdr2tmp1(i) + d2veightdr2tmp1(i,k)
+            Sumd2veightdr2tmp2(i) = Sumd2veightdr2tmp2(i) + d2veightdr2tmp2(i,k)
         enddo
     enddo
     !!$OMP END PARALLE DO   
+
+    SumDWeightSqr = 0.0
+    do i=1,sys%nbond
+        SumDWeightSqr(i) = SumDWeight(i)**2
+    enddo
 
     ! derivative of relative weights
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,Weight,SumDWeight)
@@ -78,15 +103,16 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         enddo
     enddo
     !!$OMP END PARALLEL DO
-    !!$OMP END PARALLEL
     !---------------------------------------------------
     !  Evaluate (z-z0) the local internal coordinates
     !---------------------------------------------------
     z = 0.0
+    detadr(i,k) = 0.0
     do k=1,neigh%numInner
         do j = 1,sys%nbond
             do i = 1,sys%nint
                 z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
+                detadr(i,k) = detadr(i,k) + pot(neigh%inne(k))%ut(i,j)*r(j)**2
             enddo
         enddo
     enddo
@@ -130,12 +156,18 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
     do j=1,sys%nbond
         temp = -r(j)**2
+        temp2 = -temp*r(j)
         do k=1,neigh%numInner
             dTaydR(k,j) = 0.0
+            d2TaydR2tmp1(k,j) = 0.0
+            d2TaydR2tmp2(k,j) = 0.0
             do i=1,sys%nint
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
+                d2TaydR2tmp1(k,j) = dTaydR(k,j)
             enddo
             dTaydR(k,j) = dTaydR(k,j)*temp
+            d2TaydR2tmp1(k,j) = 2.0*d2TaydR2tmp1(k,j)*temp2
+            d2TaydR2tmp2(k,j) = dTaydR(k,j)
         enddo
     enddo
    
