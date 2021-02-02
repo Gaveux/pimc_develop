@@ -1,7 +1,8 @@
 
 
 subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,&
-                TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2) 
+                TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,d2TaydR2tmp1,&
+                d2TaydR2tmp2,drdx) 
     use molecule_specs
     use interpolation
 
@@ -32,9 +33,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     real(kind=8), dimension(sys%nbond) :: Sumd2veightdr2tmp2
     real(kind=8) :: totsum, energy, temp, temp2, temp3
 
-    ! for d2Vdx2
-    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp1 ! intent(out)
-    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp2 ! intent(out)
+    ! for d2Taydx2
+    real(kind=8), dimension(size(Weight),sys%nbond), intent(out) :: d2TaydR2tmp1 ! intent(out)
+    real(kind=8), dimension(size(Weight),sys%nbond), intent(out) :: d2TaydR2tmp2 ! intent(out)
 
     ! for d2veightdx2
     real(kind=8), dimension(sys%nbond,size(Weight)), intent(out) :: d2veightdr2tmp1 ! intent(out)
@@ -54,13 +55,20 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     ! (Sum Tay*DWeight)*SumDWeight
     real(kind=8), dimension(sys%nbond), intent(out) :: TDWeightSumDWeight  ! intent(out)
 
+    !derivative of bond lengths with respect to cartesians
+    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(in) :: drdx
+    !Stores the value of r^2*drdx
+    !real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: r2drdx
+    real(kind=8), dimension(sys%dimen,sys%natom) :: r2drdx
+
+    ! ut*r^2*drdx
+    real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx ! intent(out)
+
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
     !Stores the zeta coordinates of the system
     real(kind=8), dimension(sys%nint,interp%ndata) :: z
-    !Stores the d(eta)/dr
-    real(kind=8), dimension(sys%nint,interp%ndata) :: detadr
-    integer :: i,j,k
+    integer :: i,j,k,l
     
     !---------------------------------------------------
     !  Calculate the Weights 
@@ -123,22 +131,46 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     !  Evaluate (z-z0) the local internal coordinates
     !---------------------------------------------------
     z = 0.0
-    detadr = 0.0
     do k=1,neigh%numInner
         do j = 1,sys%nbond
             do i = 1,sys%nint
                 z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
-                detadr(i,k) = detadr(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)**2
             enddo
         enddo
     enddo
-    
+
     do k=1,neigh%numInner
         do i=1,sys%nint
             z(i,k) = z(i,k) - pot(neigh%inner(k))%z(i)
         enddo
     enddo
     
+    !--------------------------------------------------
+    !  Evaluate v2*ut*r^2*drdx
+    !--------------------------------------------------
+    do j=1,sys%dimen
+       do i=1,sys%nbond
+          r2drdx(j,sys%mb(i)) = drdx(j,sys%mb(i),i)*r(i)**2
+       enddo
+    enddo
+    !do i=1,sys%nbond
+    !   print *, r2drdx(:,sys%mb(i),i)
+    !enddo
+    !call exit(0)
+
+    ! ut*r2drdx matrix multiplication 
+    utr2drdx = 0.0
+    do k=1,neigh%numInner
+       do l=1,sys%dimen
+          do j=1,sys%nint
+             do i=1,sys%nbond
+                utr2drdx(k,j,l) = utr2drdx(k,j,l) + pot(neigh%inner(k))%ut(j,i)*r2drdx(l,sys%mb(i)) 
+             enddo
+          enddo
+       enddo
+    enddo
+
+
     !---------------------------------------------------
     !  Calculate the energy
     !---------------------------------------------------
