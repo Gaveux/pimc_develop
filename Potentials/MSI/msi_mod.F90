@@ -59,8 +59,22 @@
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
 
+            !Variables used for d2Vdr2
+            real(kind=8), dimension(param%sys%nbond,size(Weight)) :: d2veightdr2tmp1
+            real(kind=8), dimension(param%sys%nbond,size(Weight)) :: d2veightdr2tmp2
+
+            ! 2 terms for WTaySumD2veightDr1
+            real(kind=8), dimension(param%sys%nbond) :: WTaySumD2veightDr1
+            real(kind=8), dimension(param%sys%nbond) :: WTaySumD2veightDr2
+
+            ! (Sum Tay*DWeight)*SumDWeight
+            real(kind=8), dimension(param%sys%nbond) :: TDWeightSumDWeight
+
+            ! Weight * Tay * (Sum dvdr)**2
+            real(kind=8), dimension(param%sys%nbond) :: WTSumDWeightDrSqr
+
             
-            integer :: j,k
+            integer :: i,j,k
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
@@ -78,7 +92,8 @@
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,&
             param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            dWTdr2)
+            dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,TDWeightSumDWeight,&
+            WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2)
             !endif
 
             !print *, dVdr

@@ -1,6 +1,7 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,&
+                TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2) 
     use molecule_specs
     use interpolation
 
@@ -32,26 +33,26 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2)
     real(kind=8) :: totsum, energy, temp, temp2, temp3
 
     ! for d2Vdx2
-    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp1
-    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp2
+    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp1 ! intent(out)
+    real(kind=8), dimension(size(Weight),sys%nbond) :: d2TaydR2tmp2 ! intent(out)
 
     ! for d2veightdx2
-    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp1
-    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp2
+    real(kind=8), dimension(sys%nbond,size(Weight)), intent(out) :: d2veightdr2tmp1 ! intent(out)
+    real(kind=8), dimension(sys%nbond,size(Weight)), intent(out) :: d2veightdr2tmp2 ! intent(out)
 
     ! 2 terms for Tayd2veightdr2
     real(kind=8), dimension(sys%nbond) :: Tayd2veightdr2tmp1 ! intent(out)
     real(kind=8), dimension(sys%nbond) :: Tayd2veightdr2tmp2 ! intent(out)
 
     ! 2 terms for WTaySumD2veightDr1
-    real(kind=8), dimension(sys%nbond) :: WTaySumD2veightDr1 ! intent(out)
-    real(kind=8), dimension(sys%nbond) :: WTaySumD2veightDr2 ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: WTaySumD2veightDr1 ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: WTaySumD2veightDr2 ! intent(out)
 
     ! Weight * Tay * (Sum dvdr)**2
-    real(kind=8), dimension(sys%nbond) :: WTSumDWeightDrSqr  ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: WTSumDWeightDrSqr  ! intent(out)
 
-    ! Tay*DWeight*SumDWeight
-    real(kind=8), dimension(sys%nbond) :: TDWeightSumDWeight  ! intent(out)
+    ! (Sum Tay*DWeight)*SumDWeight
+    real(kind=8), dimension(sys%nbond), intent(out) :: TDWeightSumDWeight  ! intent(out)
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -171,18 +172,20 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2)
     ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
     do j=1,sys%nbond
         temp = -r(j)**2
-        temp2 = -temp*r(j)
         do k=1,neigh%numInner
             dTaydR(k,j) = 0.0
-            d2TaydR2tmp1(k,j) = 0.0
-            d2TaydR2tmp2(k,j) = 0.0
             do i=1,sys%nint
                 dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
             enddo
-            d2TaydR2tmp1(k,j) = 2.0*dTaydR(k,j)*temp2
             dTaydR(k,j) = dTaydR(k,j)*temp
-            d2TaydR2tmp2(k,j) = dTaydR(k,j)
         enddo
+    enddo
+
+    do j=1,sys%nbond
+       do i=1,neigh%numInner 
+          d2TaydR2tmp1(i,j) = -2.0*dTaydR(i,j)*r(j)
+          d2TaydR2tmp2(i,j) = dTaydR(i,j)
+       enddo
     enddo
 
     ! 2 terms for Tay*d2veightdr2
