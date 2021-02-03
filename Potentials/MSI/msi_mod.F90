@@ -75,6 +75,10 @@
 
             real(kind=8), dimension(size(Weight),param%sys%nbond) :: d2TaydR2tmp1
             real(kind=8), dimension(size(Weight),param%sys%nbond) :: d2TaydR2tmp2
+
+            ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
+            real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_mb
+            real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_nb            
             
             integer :: i,j,k
             include 'intern.int'
@@ -96,7 +100,7 @@
             param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
             dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,TDWeightSumDWeight,&
             WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,&
-            d2TaydR2tmp1,d2TaydR2tmp2,dr)
+            d2TaydR2tmp1,d2TaydR2tmp2,dr,v2detadxut_mb,v2detadxut_nb)
             !endif
 
             !print *, dVdr

@@ -2,7 +2,7 @@
 
 subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,&
                 TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,d2TaydR2tmp1,&
-                d2TaydR2tmp2,drdx) 
+                d2TaydR2tmp2,drdx,v2detadxut_mb,v2detadxut_nb) 
     use molecule_specs
     use interpolation
 
@@ -59,10 +59,15 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(in) :: drdx
     !Stores the value of r^2*drdx
     !real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: r2drdx
-    real(kind=8), dimension(sys%dimen,sys%natom) :: r2drdx
+    real(kind=8), dimension(sys%dimen,sys%natom) :: r2drdx_mb
+    real(kind=8), dimension(sys%dimen,sys%natom) :: r2drdx_nb
 
     ! ut*r^2*drdx
-    real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx ! intent(out)
+    real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx_mb 
+    real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx_nb 
+    ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
+    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_mb ! intent(out)
+    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_nb ! intent(out)
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -150,21 +155,46 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     !--------------------------------------------------
     do j=1,sys%dimen
        do i=1,sys%nbond
-          r2drdx(j,sys%mb(i)) = drdx(j,sys%mb(i),i)*r(i)**2
+          r2drdx_mb(j,sys%mb(i)) = drdx(j,sys%mb(i),i)*r(i)**2
+          r2drdx_nb(j,sys%nb(i)) = drdx(j,sys%nb(i),i)*r(i)**2
        enddo
     enddo
     !do i=1,sys%nbond
     !   print *, r2drdx(:,sys%mb(i),i)
     !enddo
     !call exit(0)
+    !print *, sys%mb
+    !print *, sys%nb
+    !print *, '_________________________________________________________________'
 
     ! ut*r2drdx matrix multiplication 
-    utr2drdx = 0.0
+    utr2drdx_mb = 0.0
+    utr2drdx_nb = 0.0
     do k=1,neigh%numInner
        do l=1,sys%dimen
           do j=1,sys%nint
              do i=1,sys%nbond
-                utr2drdx(k,j,l) = utr2drdx(k,j,l) + pot(neigh%inner(k))%ut(j,i)*r2drdx(l,sys%mb(i)) 
+                utr2drdx_mb(k,j,l) = utr2drdx_mb(k,j,l) + pot(neigh%inner(k))%ut(j,i)*r2drdx_mb(l,sys%mb(i)) 
+                utr2drdx_nb(k,j,l) = utr2drdx_nb(k,j,l) + pot(neigh%inner(k))%ut(j,i)*r2drdx_nb(l,sys%nb(i)) 
+             enddo
+             !print *, utr2drdx_mb(k,j,l), utr2drdx_nb(k,j,l)
+          enddo
+          !print *, ''
+       enddo
+       !call exit(0)
+    enddo
+
+    ! v2* (ut*r^2*drdx) * ut
+    v2detadxut_mb = 0.0
+    v2detadxut_nb = 0.0
+    do k=1,neigh%numInner
+       do j=1,sys%dimen
+          do l=1,sys%nbond
+             do i=1,sys%nint
+                v2detadxut_mb(k,l,j) = v2detadxut_mb(k,l,j) + Weight(k)*pot(neigh%inner(k))%v2(i)*&
+                        utr2drdx_mb(k,i,j)*pot(neigh%inner(k))%ut(i,l)
+                v2detadxut_nb(k,l,j) = v2detadxut_nb(k,l,j) + Weight(k)*pot(neigh%inner(k))%v2(i)*&
+                        utr2drdx_nb(k,i,j)*pot(neigh%inner(k))%ut(i,l)
              enddo
           enddo
        enddo
@@ -215,8 +245,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
 
     do j=1,sys%nbond
        do i=1,neigh%numInner 
-          d2TaydR2tmp1(i,j) = -2.0*dTaydR(i,j)*r(j)
-          d2TaydR2tmp2(i,j) = dTaydR(i,j)
+          d2TaydR2tmp1(i,j) = -2.0*Weight(i)*dTaydR(i,j)*r(j)
+          d2TaydR2tmp2(i,j) = Weight(i)*dTaydR(i,j)
        enddo
     enddo
 

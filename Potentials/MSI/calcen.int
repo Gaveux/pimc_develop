@@ -1,6 +1,6 @@
 
 interface
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,d2TaydR2tmp1,d2TaydR2tmp2,drdx) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,d2TaydR2tmp1,d2TaydR2tmp2,drdx,v2detadxut_mb,v2detadxut_nb) 
 
   use molecule_specs
   use interpolation
@@ -30,6 +30,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
   real(kind=8), dimension(size(Weight),sys%nbond), intent(out) :: d2TaydR2tmp2
 
   real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(in) :: drdx
+
+  real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_mb
+  real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_nb
 
   end subroutine calcen
 end interface
