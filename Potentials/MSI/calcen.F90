@@ -96,12 +96,11 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,Tayd
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,temp,r)
     do k=1,neigh%numInner
         temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
-        temp2 = 2.0*temp*RawWeightTemp(k)*(interp%ipow+1.0)
-        temp3 = -temp
         do i=1,sys%nbond
             DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
-            d2veightdr2tmp1(i,k) = temp2*(r(i) - pot(neigh%inner(k))%r(i))**2*r(i)**4 
-            d2veightdr2tmp2(i,k) = temp3*(r(i)**4 - (r(i) - pot(neigh%inner(k))%r(i))*r(i)**2)
+            d2veightdr2tmp1(i,k) = temp*r(i)**3*( (interp%ipow2+2.0)*RawWeightTemp(k)*r(i)*(r(i) - pot(neigh%inner(k))%r(i))**2 &
+                  - r(i) - 2.0*(r(i) - pot(neigh%inner(k))%r(i)) ) 
+            d2veightdr2tmp2(i,k) = -DWeight(i,k)
         enddo
     enddo
     !!$OMP END PARALLEL DO
