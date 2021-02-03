@@ -47,9 +47,6 @@
             !derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%natom&
             ,param%sys%nbond) :: dr
-            !derivative of bond lengths with respect to cartesians
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom&
-            ,param%sys%nbond) :: dr2
             !second derivative matrix of bondlengths w.r.t. Cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%dimen&
             ,param%sys%natom,param%sys%nbond) :: d2r
@@ -88,7 +85,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr,dr2,d2r)
+            call intern(param%sys,x,r,dr,d2r)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,&
@@ -124,6 +121,8 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
+            !print *, dV(:,param%sys%mb(1))
+            !call exit(0)
 
             !==========================================
             ! Evaluate Sum weight*d2Taydx2
@@ -145,6 +144,17 @@
             !==========================================
             ! Evaluate Sum Tay*d2Weightdx2
             !==========================================
+            !do k=1, param%sys%dimen
+            !   do j=1,param%sys%nbond
+            !      do i=1,param%sys%nbond
+            !         d2wdx2(k,j,param%sys%mb(j)) = d2wdx2(k,j,param%sys%mb(j)) & 
+            !            + (Tayd2veightdr2tmp1(i) + Tayd2veightdr2tmp2(i)& 
+            !            + 2.0*TDWeightSumDWeight(i) + WTSumDWeightDrSqr(i)& 
+            !            + WTaySumD2veightDr1(i) + WTaySumD2veightDr2(i))&
+            !            
+            !      enddo
+            !   enddo
+            !enddo
 
             r=1/r
 

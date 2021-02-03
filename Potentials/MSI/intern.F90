@@ -1,13 +1,12 @@
 !Computes the bond length coordinates and the first and second derivatives of these coordinates with respect
 !to cartesians if these values are specified
-subroutine intern(sys,x,r,dr,dr2,d2rdxdx)
+subroutine intern(sys,x,r,dr,d2rdxdx)
     use molecule_specs
     type (molsysdat), intent(in) :: sys
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
     real(kind=8), dimension(sys%dimen,sys%dimen) :: dxkdxj ! a diagonal matrix serves for evaluating d2rdx2 matrix
-    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr2
     real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%nbond), intent(out) :: d2rdxdx
 
     integer :: i,j,k
@@ -26,11 +25,6 @@ subroutine intern(sys,x,r,dr,dr2,d2rdxdx)
         do i=1,sys%nbond
             dr(j,sys%mb(i),i)=(x(j,sys%mb(i))-x(j,sys%nb(i)))/r(i)
             dr(j,sys%nb(i),i)=-dr(j,sys%mb(i),i)
-
-            !dr2(j,sys%mb(i),i) is (dr/dx_k)^2 and (dr/dx_j)^2
-            dr2(j,sys%mb(i),i)=dr(j,sys%mb(i),i)**2
-            !dr2(j,sys%nb(i),i) is (dr/dx_k)*(dr/dx_j) and (dr/dx_j)*(dr/dx_k)
-            dr2(j,sys%nb(i),i)=-dr2(j,sys%mb(i),i)
         enddo
     enddo
 
