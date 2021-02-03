@@ -1,8 +1,8 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,&
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,Tayd2veightdr2tmp1,Tayd2veightdr2tmp2,&
                 TDWeightSumDWeight,WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,d2TaydR2tmp1,&
-                d2TaydR2tmp2,drdx,v2detadxut_mb,v2detadxut_nb) 
+                drdx,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb) 
     use molecule_specs
     use interpolation
 
@@ -34,16 +34,17 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     real(kind=8) :: totsum, energy, temp, temp2, temp3
 
     ! for d2Taydx2
-    real(kind=8), dimension(size(Weight),sys%nbond), intent(out) :: d2TaydR2tmp1 ! intent(out)
-    real(kind=8), dimension(size(Weight),sys%nbond), intent(out) :: d2TaydR2tmp2 ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: d2TaydR2tmp1 ! intent(out)
+    real(kind=8), dimension(sys%dimen,sys%nbond), intent(out) :: d2TaydR2tmp2_mb ! intent(out)
+    real(kind=8), dimension(sys%dimen,sys%nbond), intent(out) :: d2TaydR2tmp2_nb ! intent(out)
 
     ! for d2veightdx2
-    real(kind=8), dimension(sys%nbond,size(Weight)), intent(out) :: d2veightdr2tmp1 ! intent(out)
-    real(kind=8), dimension(sys%nbond,size(Weight)), intent(out) :: d2veightdr2tmp2 ! intent(out)
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp1 ! intent(out)
+    real(kind=8), dimension(sys%nbond,size(Weight)) :: d2veightdr2tmp2 ! intent(out)
 
     ! 2 terms for Tayd2veightdr2
-    real(kind=8), dimension(sys%nbond) :: Tayd2veightdr2tmp1 ! intent(out)
-    real(kind=8), dimension(sys%nbond) :: Tayd2veightdr2tmp2 ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: Tayd2veightdr2tmp1 ! intent(out)
+    real(kind=8), dimension(sys%nbond), intent(out) :: Tayd2veightdr2tmp2 ! intent(out)
 
     ! 2 terms for WTaySumD2veightDr1
     real(kind=8), dimension(sys%nbond), intent(out) :: WTaySumD2veightDr1 ! intent(out)
@@ -66,8 +67,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
     real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx_mb 
     real(kind=8), dimension(size(Weight),sys%nint,sys%dimen) :: utr2drdx_nb 
     ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
-    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_mb ! intent(out)
-    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen), intent(out) :: v2detadxut_nb ! intent(out)
+    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen) :: v2detadxut_mb
+    real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen) :: v2detadxut_nb
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -196,6 +197,19 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
                 v2detadxut_nb(k,l,j) = v2detadxut_nb(k,l,j) + Weight(k)*pot(neigh%inner(k))%v2(i)*&
                         utr2drdx_nb(k,i,j)*pot(neigh%inner(k))%ut(i,l)
              enddo
+             v2detadxut_mb(k,l,j) = v2detadxut_mb(k,l,j)*r(l)**2
+             v2detadxut_nb(k,l,j) = v2detadxut_nb(k,l,j)*r(l)**2
+          enddo
+       enddo
+    enddo
+
+    d2TaydR2tmp2_mb = 0.0
+    d2TaydR2tmp2_nb = 0.0
+    do k=1,sys%nbond
+       do j=1, sys%dimen
+          do i=1,neigh%numInner
+             d2TaydR2tmp2_mb(j,k) = d2TaydR2tmp2_mb(j,k) + v2detadxut_mb(i,k,j)
+             d2TaydR2tmp2_nb(j,k) = d2TaydR2tmp2_nb(j,k) + v2detadxut_nb(i,k,j)
           enddo
        enddo
     enddo
@@ -245,9 +259,12 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,d2ve
 
     do j=1,sys%nbond
        do i=1,neigh%numInner 
-          d2TaydR2tmp1(i,j) = -2.0*Weight(i)*dTaydR(i,j)*r(j)
-          d2TaydR2tmp2(i,j) = Weight(i)*dTaydR(i,j)
+          d2TaydR2tmp1(j) = d2TaydR2tmp1(j) - Weight(i)*dTaydR(i,j)
+          !d2TaydR2tmp1(j) = d2TaydR2tmp1(j) - Weight(i)*dTaydR(i,j)
+          !d2TaydR2tmp2(j) = d2TaydR2tmp2(j) + Weight(i)*dTaydR(i,j)
        enddo
+       !d2TaydR2tmp1(j) = 2.0*d2TaydR2tmp1(j)*r(j)
+       d2TaydR2tmp1(j) = (2.0*r(j)-1.0)*d2TaydR2tmp1(j)
     enddo
 
     ! 2 terms for Tay*d2veightdr2

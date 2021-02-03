@@ -38,6 +38,8 @@
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Taydx2 ! intent(out)
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Taydxmdxn ! intent(out)
             
 
             !Variables used internally by the modified shepard code
@@ -60,8 +62,8 @@
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
 
             !Variables used for d2Vdr2
-            real(kind=8), dimension(param%sys%nbond,size(Weight)) :: d2veightdr2tmp1
-            real(kind=8), dimension(param%sys%nbond,size(Weight)) :: d2veightdr2tmp2
+            real(kind=8), dimension(param%sys%nbond) :: Tayd2veightdr2tmp1
+            real(kind=8), dimension(param%sys%nbond) :: Tayd2veightdr2tmp2
 
             ! 2 terms for WTaySumD2veightDr1
             real(kind=8), dimension(param%sys%nbond) :: WTaySumD2veightDr1
@@ -73,8 +75,9 @@
             ! Weight * Tay * (Sum dvdr)**2
             real(kind=8), dimension(param%sys%nbond) :: WTSumDWeightDrSqr
 
-            real(kind=8), dimension(size(Weight),param%sys%nbond) :: d2TaydR2tmp1
-            real(kind=8), dimension(size(Weight),param%sys%nbond) :: d2TaydR2tmp2
+            real(kind=8), dimension(param%sys%nbond) :: d2TaydR2tmp1
+            real(kind=8), dimension(param%sys%dimen,param%sys%nbond) :: d2TaydR2tmp2_mb
+            real(kind=8), dimension(param%sys%dimen,param%sys%nbond) :: d2TaydR2tmp2_nb
 
             ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
             real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_mb
@@ -95,12 +98,13 @@
             !the two part weight function can easily be included, however there will need to be 
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
+
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,&
             param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            dWTdr2,d2veightdr2tmp1,d2veightdr2tmp2,TDWeightSumDWeight,&
+            dWTdr2,Tayd2veightdr2tmp1,Tayd2veightdr2tmp2,TDWeightSumDWeight,&
             WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,&
-            d2TaydR2tmp1,d2TaydR2tmp2,dr,v2detadxut_mb,v2detadxut_nb)
+            d2TaydR2tmp1,dr,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
             !endif
 
             !print *, dVdr
@@ -116,14 +120,33 @@
 
             do j=1,param%sys%nbond
                 do k=1,param%sys%dimen
-                    dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)&
-                    *dr(k,param%sys%mb(j),j)
-                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)&
-                    *dr(k,param%sys%nb(j),j)
+                    dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)*dr(k,param%sys%mb(j),j)
+                    dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
+
+            !==========================================
+            ! Evaluate Sum weight*d2Taydx2
+            !==========================================
+
+            ! note: d2r(;,sys%mb) is diagonal elements, d2r(;,sys%mb)
+            ! is off-diagonal elements
+            do j=1,param%sys%nbond
+               do k=1,param%sys%dimen
+                  do i=1,param%sys%dimen
+                     d2Taydx2(k,i,param%sys%mb(j)) = d2Taydx2(k,i,param%sys%mb(j)) &
+                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%mb(j),j)
+                     d2Taydxmdxn(k,i,param%sys%nb(j)) = d2Taydxmdxn(k,i,param%sys%nb(j)) &
+                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%nb(j),j)
+                  enddo
+               enddo
+            enddo
+
+            !==========================================
+            ! Evaluate Sum Tay*d2Weightdx2
+            !==========================================
+
             r=1/r
-           
 
         end subroutine potential
 
