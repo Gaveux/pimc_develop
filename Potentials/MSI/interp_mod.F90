@@ -6,7 +6,7 @@ module interpolation
   !---------------------------------------------
   type interp_params
     integer :: ipart,neigh_update,nneigh,ngroup
-    integer :: ipow,lowp, ipow2
+    real(kind=8) :: ipow,lowp, ipow2
     integer :: ndata,nforc
     real(kind=8) :: wtol,outer,vmax, vmin, sigma
     real(kind=8) :: avrads
