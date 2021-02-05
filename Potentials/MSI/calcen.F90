@@ -1,6 +1,6 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
                 d2TaydR2tmp1,&
                 drdx,d2rdx2,d2rdxmdxn,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb) 
     use molecule_specs
@@ -18,7 +18,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
     real(kind=8), dimension(:), intent(in) :: r
     real(kind=8), intent(out) :: V
     real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
-    real(kind=8), dimension(sys%nbond), intent(out) :: dWTdr2
 
     real(kind=8), dimension(size(Weight)) :: Raw
     ! by defining the dimension of Raw to neigh%numInner, this restricts the
@@ -84,8 +83,18 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
     real(kind=8), dimension(sys%dimen,sys%dimen) :: SumTaydvmSumdvn
 
     ! d2Vdx2 
-    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdx2
-    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdxmdxn
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdx2    !intent(out)
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdxmdxn !intent(out)
+
+    !DWeightdxm
+    real(kind=8), dimension(size(Weight),sys%dimen) :: DWeightdxm
+    real(kind=8), dimension(size(Weight),sys%dimen) :: DWeightdxn
+    !dTaydxm and dTaydxn
+    real(kind=8), dimension(size(Weight),sys%dimen) :: dTaydxm
+    real(kind=8), dimension(size(Weight),sys%dimen) :: dTaydxn
+    ! dWTdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: dWTdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: dWTdxmdxn
 
     !Stores the value of r^2*drdx
     !real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: r2drdx
@@ -351,14 +360,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
        !d2TaydR2tmp1(j) = 2.0*d2TaydR2tmp1(j)*r(j)
        d2TaydR2tmp1(j) = (2.0*r(j)-1.0)*d2TaydR2tmp1(j)
     enddo
-
-    ! dWeight/dr * dTay/dr
-    dWTdr2 = 0.0
-    do k=1,neigh%numInner
-       do i=1,sys%nbond
-          dWTdr2(i) = dWTdr2(i) + 2.0*DWeight(i,k)*dTaydR(k,i)
-       enddo
-    enddo
    
     ! gradient of the energy
     dVdR = 0.0
@@ -369,6 +370,45 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
     enddo
 
     V = energy 
+
+    !----------------------------------------------------------
+    !  Calculate sum_{j}^{Ndata} 2.0 * dWeightdx * dTaydx
+    !----------------------------------------------------------
+    ! dWeight/dx_m and dWeight/dx_n
+    DWeightdxm = 0.0
+    !DWeightdxn = 0.0
+    do k=1,neigh%numInner
+       do j=1,sys%dimen
+          do i=1,sys%nbond
+            DWeightdxm(k,j) = DWeightdxm(k,j) + DWeight(i,k)*drdx(j,sys%mb(i),i)
+            !DWeightdxn(k,j) = DWeightdxn(k,j) + DWeight(i,k)*drdx(j,sys%nb(i),i)
+          enddo
+       enddo
+    enddo
+    DWeightdxn = -DWeightdxm
+
+    ! dTaydxm dTaydxn
+    dTaydxm = 0.0
+    do k=1,neigh%numInner
+       do j=1,sys%dimen
+          do i=1,sys%nbond
+             dTaydxm(k,j) = dTaydxm(k,j) + dTaydR(k,i)*drdx(j,sys%mb(i),i)
+          enddo
+       enddo
+    enddo
+    dTaydxn = -dTaydxm
+
+    ! DWeightdx * dTaydx
+    do k=1,neigh%numInner
+       do l=1,sys%dimen
+          do i=1,sys%dimen
+             dWTdx2(l,i) = dWTdx2(l,i) + DWeightdxm(k,l)*dTaydxm(k,i)
+             dWTdxmdxn(l,i) = dWTdxmdxn(l,i) + DWeightdxm(k,l)*dTaydxn(k,i) 
+          enddo
+       enddo
+    enddo
+    dWTdx2 = 2.0*dWTdx2
+    dWTdxmdxn = 2.0*dWTdxmdxn
 
     !----------------------------------------------------------
     !  Calculate the Sum_{j=1}^{Ndata} (Tay_j * d2weight_j/dx2)
@@ -430,8 +470,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,dWTdr2,&
     !---------------------------------------------------------------------------
     !  Calculate (Sum_{j=1}^{Ndata} 2.0 * w_j * T_j) * (Sum dvdx)*(Sum dvdx)
     !---------------------------------------------------------------------------
-    d2Vdx2 = SumTayd2veightdx2 + Sumd2veightdx2 + 2.0*SumTaydvmSumdvm + sqrSumdveightdx
-    d2Vdxmdxn = SumTayd2veightdxmdxn + Sumd2veightdxmdxn + 2.0*SumTaydvmSumdvn + sqrSumdveightdxmdxn 
+    d2Weightdx2 = SumTayd2veightdx2 + Sumd2veightdx2 + 2.0*SumTaydvmSumdvm + sqrSumdveightdx
+    d2Weightdxmdxn = SumTayd2veightdxmdxn + Sumd2veightdxmdxn + 2.0*SumTaydvmSumdvn + sqrSumdveightdxmdxn 
 
   return
 end subroutine

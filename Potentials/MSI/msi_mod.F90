@@ -58,8 +58,6 @@
             real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%nbond) :: d2rdxmdxn
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
-            !dWeightdr*dTaydr
-            real(kind=8), dimension(param%sys%nbond) :: dWTdr2
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
@@ -90,12 +88,8 @@
 
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            dWTdr2,d2TaydR2tmp1,dr,d2rdx2,d2rdxmdxn,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
+            d2TaydR2tmp1,dr,d2rdx2,d2rdxmdxn,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
             !endif
-
-            !print *, dVdr
-            !print *, dWTdr2
-            !call exit(0)
 
             V = V - param%interp%vmin
             do j=1,param%sys%natom
