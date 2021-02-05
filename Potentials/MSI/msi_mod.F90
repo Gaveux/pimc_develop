@@ -62,10 +62,6 @@
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
 
-            real(kind=8), dimension(param%sys%nbond) :: d2TaydR2tmp1
-            real(kind=8), dimension(param%sys%dimen,param%sys%nbond) :: d2TaydR2tmp2_mb
-            real(kind=8), dimension(param%sys%dimen,param%sys%nbond) :: d2TaydR2tmp2_nb
-
             ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
             real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_mb
             real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_nb            
@@ -88,7 +84,7 @@
 
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            d2TaydR2tmp1,dr,d2rdx2,d2rdxmdxn,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
+            dr,d2rdx2,d2rdxmdxn)
             !endif
 
             V = V - param%interp%vmin
@@ -104,113 +100,6 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
-
-            !do i=1, param%sys%nbond
-            !   print *, dV(:,param%sys%mb(i))
-            !   print *, dV(:,param%sys%nb(i))
-            !   print *, ''
-            !enddo
-            !call exit(0)
-
-            !==========================================
-            ! Evaluate Sum weight*d2Taydx2
-            !==========================================
-
-            ! note: d2r(:,sys%mb) is diagonal elements, d2r(:,sys%mb)
-            ! is off-diagonal elements
-!            do j=1,param%sys%nbond
-!               do k=1,param%sys%dimen
-!                  do i=1,param%sys%dimen
-!                     d2Taydx2(k,i,param%sys%mb(j)) = d2Taydx2(k,i,param%sys%mb(j)) &
-!                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%mb(j),j)
-!                     d2Taydxmdxn(k,i,param%sys%nb(j)) = d2Taydxmdxn(k,i,param%sys%nb(j)) &
-!                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%nb(j),j)
-!                  enddo
-!               enddo
-!            enddo
-
-            !==========================================
-            ! Evaluate Sum Tay*d2Weightdx2
-            !==========================================
-!            d2wdx2 = 0.0
-!            d2wdxmdxn = 0.0
-!            do k=1, param%sys%dimen
-!               do j=1,param%sys%dimen
-!                  do i=1,param%sys%nbond
-!                     d2wdx2(k,j,param%sys%mb(j)) = d2wdx2(k,j,param%sys%mb(j)) & 
-!                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
-!                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
-!                        * dr(k,param%sys%mb(i),i) + (Tayd2veightdr2tmp2(i) &
-!                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%mb(i),i)
-!
-!
-!                     d2wdxmdxn(k,j,param%sys%nb(j)) = d2wdxmdxn(k,j,param%sys%nb(j)) & 
-!                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
-!                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
-!                        * dr(k,param%sys%nb(i),i) + (Tayd2veightdr2tmp2(i) &
-!                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%nb(i),i)
-!                  enddo
-!               enddo
-!            enddo
-
-
-               !do j=1,param%sys%dimen
-               !   do i=1, param%sys%dimen
-               !      print *, d2wdx2(j,i,param%sys%mb(1))
-               !   enddo
-               !enddo
-               !print *, ''
-
-               !do j=1,param%sys%dimen
-               !   do i=1, param%sys%dimen
-               !      print *, d2wdxmdxn(j,i,param%sys%nb(1))
-               !   enddo
-               !enddo
-
-               !call exit(0)
-
-
-            !==========================================
-            ! Evaluate Sum dWeight * dTay
-            !==========================================
-!            dWTdx2 = 0.0
-!            dWTdxmdxn = 0.0
-!            do k=1,param%sys%dimen
-!               do j=1,param%sys%dimen
-!                  do i=1,param%sys%nbond
-!                     dWTdx2(k,j,param%sys%mb(i)) = dWTdx2(k,j,param%sys%mb(i)) + &
-!                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%mb(i),i)
-!
-!                     dWTdxmdxn(k,j,param%sys%mb(i)) = dWTdxmdxn(k,j,param%sys%mb(i)) + &
-!                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%nb(i),i)
-!                  enddo
-!               enddo
-!            enddo
-
-
-            !do j=1, param%sys%dimen
-            !   do i=1, param%sys%dimen
-            !      print *, dWTdx2(j,i,param%sys%mb(1)), dWTdxmdxn(j,i,param%sys%mb(1))
-            !   enddo
-            !   print *, ''
-            !enddo
-            !call exit(0)
-
-            !==========================================
-            ! Evaluate Sum d2Vdx2
-            !==========================================
-            !d2Vdx2 = 0.0
-            !d2Vdxmdxn = 0.0
-            !do k=1,param%sys%dimen
-            !   do j=1,param%%sys%dimen
-            !      do i=1, param%sys%nbond
-            !         d2Vdx2(k,j,param%sys%mb(i)) = d2Vdx2(k,j,param%sys%mb(i)) + &
-            !            d2Taydx2(k,j,param%sys%mb(i)) + d2wdx2(k,j,param%sys%mb(j)) &
-            !            + dWTdx2(k,j,param%sys%mb(i))
-            !      enddo
-            !   enddo
-            !enddo
-            
 
             r=1/r
 
