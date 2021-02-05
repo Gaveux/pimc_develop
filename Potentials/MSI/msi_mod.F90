@@ -54,8 +54,8 @@
             real(kind=8), dimension(param%sys%dimen,param%sys%natom&
             ,param%sys%nbond) :: dr
             !second derivative matrix of bondlengths w.r.t. Cartesians
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen&
-            ,param%sys%natom,param%sys%nbond) :: d2r
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%nbond) :: d2rdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%nbond) :: d2rdxmdxn
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !dWeightdr*dTaydr
@@ -67,10 +67,6 @@
             !Variables used for d2Vdr2
             real(kind=8), dimension(param%sys%nbond) :: Tayd2veightdr2tmp1
             real(kind=8), dimension(param%sys%nbond) :: Tayd2veightdr2tmp2
-
-            ! 2 terms for WTaySumD2veightDr1
-            real(kind=8), dimension(param%sys%nbond) :: WTaySumD2veightDr1
-            real(kind=8), dimension(param%sys%nbond) :: WTaySumD2veightDr2
 
             ! (Sum Tay*DWeight)*SumDWeight
             real(kind=8), dimension(param%sys%nbond) :: TDWeightSumDWeight
@@ -91,7 +87,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr,d2r)
+            call intern(param%sys,x,r,dr,d2rdx2,d2rdxmdxn)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,&
@@ -106,8 +102,8 @@
             call calcen(param%sys,param%interp,param%pot,&
             param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
             dWTdr2,Tayd2veightdr2tmp1,Tayd2veightdr2tmp2,TDWeightSumDWeight,&
-            WTSumDWeightDrSqr,WTaySumD2veightDr1,WTaySumD2veightDr2,&
-            d2TaydR2tmp1,dr,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
+            WTSumDWeightDrSqr,&
+            d2TaydR2tmp1,dr,d2rdx2,d2rdxmdxn,d2TaydR2tmp2_mb,d2TaydR2tmp2_nb)
             !endif
 
             !print *, dVdr
@@ -127,7 +123,12 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
-            !print *, dV(:,param%sys%mb(1))
+
+            !do i=1, param%sys%nbond
+            !   print *, dV(:,param%sys%mb(i))
+            !   print *, dV(:,param%sys%nb(i))
+            !   print *, ''
+            !enddo
             !call exit(0)
 
             !==========================================
@@ -136,74 +137,74 @@
 
             ! note: d2r(:,sys%mb) is diagonal elements, d2r(:,sys%mb)
             ! is off-diagonal elements
-            do j=1,param%sys%nbond
-               do k=1,param%sys%dimen
-                  do i=1,param%sys%dimen
-                     d2Taydx2(k,i,param%sys%mb(j)) = d2Taydx2(k,i,param%sys%mb(j)) &
-                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%mb(j),j)
-                     d2Taydxmdxn(k,i,param%sys%nb(j)) = d2Taydxmdxn(k,i,param%sys%nb(j)) &
-                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%nb(j),j)
-                  enddo
-               enddo
-            enddo
+!            do j=1,param%sys%nbond
+!               do k=1,param%sys%dimen
+!                  do i=1,param%sys%dimen
+!                     d2Taydx2(k,i,param%sys%mb(j)) = d2Taydx2(k,i,param%sys%mb(j)) &
+!                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%mb(j),j)
+!                     d2Taydxmdxn(k,i,param%sys%nb(j)) = d2Taydxmdxn(k,i,param%sys%nb(j)) &
+!                          + d2TaydR2tmp1(j)*d2r(k,i,param%sys%nb(j),j)
+!                  enddo
+!               enddo
+!            enddo
 
             !==========================================
             ! Evaluate Sum Tay*d2Weightdx2
             !==========================================
-            d2wdx2 = 0.0
-            d2wdxmdxn = 0.0
-            do k=1, param%sys%dimen
-               do j=1,param%sys%dimen
-                  do i=1,param%sys%nbond
-                     d2wdx2(k,j,param%sys%mb(j)) = d2wdx2(k,j,param%sys%mb(j)) & 
-                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
-                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
-                        * dr(k,param%sys%mb(i),i) + (Tayd2veightdr2tmp2(i) &
-                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%mb(i),i)
+!            d2wdx2 = 0.0
+!            d2wdxmdxn = 0.0
+!            do k=1, param%sys%dimen
+!               do j=1,param%sys%dimen
+!                  do i=1,param%sys%nbond
+!                     d2wdx2(k,j,param%sys%mb(j)) = d2wdx2(k,j,param%sys%mb(j)) & 
+!                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
+!                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
+!                        * dr(k,param%sys%mb(i),i) + (Tayd2veightdr2tmp2(i) &
+!                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%mb(i),i)
+!
+!
+!                     d2wdxmdxn(k,j,param%sys%nb(j)) = d2wdxmdxn(k,j,param%sys%nb(j)) & 
+!                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
+!                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
+!                        * dr(k,param%sys%nb(i),i) + (Tayd2veightdr2tmp2(i) &
+!                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%nb(i),i)
+!                  enddo
+!               enddo
+!            enddo
 
 
-                     d2wdxmdxn(k,j,param%sys%nb(j)) = d2wdxmdxn(k,j,param%sys%nb(j)) & 
-                        + (Tayd2veightdr2tmp1(i) + 2.0*TDWeightSumDWeight(i) &
-                        + WTSumDWeightDrSqr(i) + WTaySumD2veightDr1(i))*dr(j,param%sys%mb(i),i)&
-                        * dr(k,param%sys%nb(i),i) + (Tayd2veightdr2tmp2(i) &
-                        + WTaySumD2veightDr2(i))*d2r(k,j,param%sys%nb(i),i)
-                  enddo
-               enddo
-            enddo
+               !do j=1,param%sys%dimen
+               !   do i=1, param%sys%dimen
+               !      print *, d2wdx2(j,i,param%sys%mb(1))
+               !   enddo
+               !enddo
+               !print *, ''
 
+               !do j=1,param%sys%dimen
+               !   do i=1, param%sys%dimen
+               !      print *, d2wdxmdxn(j,i,param%sys%nb(1))
+               !   enddo
+               !enddo
 
-            !   do j=1,param%sys%dimen
-            !      do i=1, param%sys%dimen
-            !         print *, d2wdx2(j,i,param%sys%mb(1))
-            !      enddo
-            !   enddo
-            !   print *, ''
-
-            !   do j=1,param%sys%dimen
-            !      do i=1, param%sys%dimen
-            !         print *, d2wdxmdxn(j,i,param%sys%nb(1))
-            !      enddo
-            !   enddo
-
-            !   call exit(0)
+               !call exit(0)
 
 
             !==========================================
             ! Evaluate Sum dWeight * dTay
             !==========================================
-            dWTdx2 = 0.0
-            dWTdxmdxn = 0.0
-            do k=1,param%sys%dimen
-               do j=1,param%sys%dimen
-                  do i=1,param%sys%nbond
-                     dWTdx2(k,j,param%sys%mb(i)) = dWTdx2(k,j,param%sys%mb(i)) + &
-                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%mb(i),i)
-
-                     dWTdxmdxn(k,j,param%sys%mb(i)) = dWTdxmdxn(k,j,param%sys%mb(i)) + &
-                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%nb(i),i)
-                  enddo
-               enddo
-            enddo
+!            dWTdx2 = 0.0
+!            dWTdxmdxn = 0.0
+!            do k=1,param%sys%dimen
+!               do j=1,param%sys%dimen
+!                  do i=1,param%sys%nbond
+!                     dWTdx2(k,j,param%sys%mb(i)) = dWTdx2(k,j,param%sys%mb(i)) + &
+!                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%mb(i),i)
+!
+!                     dWTdxmdxn(k,j,param%sys%mb(i)) = dWTdxmdxn(k,j,param%sys%mb(i)) + &
+!                        dWTdr2(i)*dr(k,param%sys%mb(i),i)*dr(j,param%sys%nb(i),i)
+!                  enddo
+!               enddo
+!            enddo
 
 
             !do j=1, param%sys%dimen
