@@ -65,6 +65,14 @@
             ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
             real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_mb
             real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_nb            
+
+            ! d2Vdx2 and d2Vdxmdxn
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen) :: d2Vdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen) :: d2Vdxmdxn
+
+            ! dVdxd2Vdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dVdxd2Vdx2_mb
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dVdxd2Vdx2_nb
             
             integer :: i,j,k
             include 'intern.int'
@@ -84,7 +92,7 @@
 
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            dr,d2rdx2,d2rdxmdxn)
+            dr,d2rdx2,d2rdxmdxn,d2Vdx2,d2Vdxmdxn)
             !endif
 
             V = V - param%interp%vmin
@@ -98,8 +106,38 @@
                 do k=1,param%sys%dimen
                     dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)*dr(k,param%sys%mb(j),j)
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
+                    !print *, dV(k,param%sys%mb(j)), dV(k,param%sys%nb(j)), j
                 enddo
             enddo
+            !print *, param%sys%mb
+            !print *, param%sys%nb
+            !do i=1,param%sys%nbond
+            !   print *, dV(:,param%sys%mb(i)), param%sys%mb(i)
+            !   print *, dV(:,param%sys%nb(i)), param%sys%nb(i)
+            !   print *, ''
+            !enddo
+            !call exit(0)
+
+            !-------------------------------------
+            ! Calculate dVdx * d2Vdx2
+            !-------------------------------------
+            dVdxd2Vdx2_mb = 0.0
+            dVdxd2Vdx2_nb = 0.0
+            do k=1,param%sys%dimen
+               do j=1,param%sys%nbond
+                  do i=1,param%sys%dimen
+                    dVdxd2Vdx2_mb(k,param%sys%mb(j)) = dVdxd2Vdx2_mb(k,param%sys%mb(i)) + dV(k,param%sys%mb(j))*d2Vdx2(k,i) &
+                        + dV(k,param%sys%nb(j))*d2Vdxmdxn(k,i)
+                    dVdxd2Vdx2_nb(k,param%sys%nb(j)) = dVdxd2Vdx2_nb(k,param%sys%nb(i)) + dV(k,param%sys%mb(j))*d2Vdxmdxn(k,i) &
+                        + dV(k,param%sys%nb(j))*d2Vdx2(k,i)
+                  enddo
+               enddo
+            enddo
+            ! I think dVdxd2Vdx2_mb and dVdxd2Vdx2_nb should be one variable
+            print *, dVdxd2Vdx2_mb
+            print *, ''
+            print *, dVdxd2Vdx2_nb
+            call exit(0)
 
             r=1/r
 

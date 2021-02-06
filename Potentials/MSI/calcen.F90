@@ -1,7 +1,7 @@
 
 
 subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
-                drdx,d2rdx2,d2rdxmdxn) 
+                drdx,d2rdx2,d2rdxmdxn,d2Vdx2,d2Vdxmdxn) 
     use molecule_specs
     use interpolation
 
@@ -93,8 +93,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdxmdxn !intent(out)
 
     ! d2Vdx2
-    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdx2
-    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdxmdxn
+    real(kind=8), dimension(sys%dimen,sys%dimen), intent(out) :: d2Vdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen), intent(out) :: d2Vdxmdxn
 
     !DWeightdxm
     real(kind=8), dimension(size(Weight),sys%dimen) :: DWeightdxm
@@ -206,7 +206,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     do k=1,neigh%numInner
        do j=1,sys%dimen
           do i=1,sys%nbond
-             Sumdveightdxm(j,sys%mb(i),i) = Sumdveightdxm(j,sys%mb(i),i) + DWeight(i,k)*drdx(j,sys%mb(i),i)
+             Sumdveightdxm(j,sys%mb(i),i) = Sumdveightdxm(j,sys%mb(i),i) + DWeight(i,k)*drdx(j,sys%mb(i),i) !FIXME
              !Sumdveightdxn(j,sys%nb(i),i) = Sumdveightdxn(j,sys%nb(i),i) + DWeight(i,k)*drdx(j,sys%nb(i),i)
           enddo
        enddo
@@ -216,6 +216,10 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
           Sumdveightdxn(j,sys%nb(i),i) = -Sumdveightdxm(j,sys%mb(i),i)
        enddo
     enddo
+    !do i=1, sys%nbond
+    !   print *, Sumdveightdxn(:,sys%nb(i),i)
+    !enddo
+    !call exit(0)
 
     ! sum_{j=1}^{Ndata} dveight_j/dx * sum_{j=1}^{Ndata} dveight_j/dx = 3*3 matrix
     sqrSumdveightdx = 0.0
@@ -223,10 +227,15 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
        do j=1,sys%dimen
           do i=1,sys%nbond
              sqrSumdveightdx(k,j) = sqrSumdveightdx(k,j) + Sumdveightdxm(k,sys%mb(i),i)*Sumdveightdxm(j,sys%mb(i),i)
+             ! FIXME
           enddo
        enddo
     enddo
     sqrSumdveightdxmdxn = -sqrSumdveightdx
+    !print *, sqrSumdveightdx
+    !print *, ''
+    !print *, sqrSumdveightdxmdxn
+    !call exit(0)
 
     ! derivative of relative weights
     !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,Weight,SumDWeight)
