@@ -88,9 +88,13 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     real(kind=8), dimension(sys%dimen,sys%dimen) :: SumTaydvmSumdvm
     real(kind=8), dimension(sys%dimen,sys%dimen) :: SumTaydvmSumdvn
 
-    ! d2Vdx2 
+    ! d2Weightdx2 
     real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdx2    !intent(out)
     real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdxmdxn !intent(out)
+
+    ! d2Vdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Vdxmdxn
 
     !DWeightdxm
     real(kind=8), dimension(size(Weight),sys%dimen) :: DWeightdxm
@@ -447,9 +451,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     dWTdx2 = 2.0*dWTdx2
     dWTdxmdxn = 2.0*dWTdxmdxn
 
-    !----------------------------------------------------------
-    !  Calculate the Sum_{j=1}^{Ndata} (Tay_j * d2weight_j/dx2)
-    !----------------------------------------------------------
+    !-------------------------------------------------------------------------------
+    !  Calculate the Sum_{j=1}^{Ndata} (Tay_j * d2weight_j/dx2)  For Tay*d2Weightdx2
+    !-------------------------------------------------------------------------------
     SumTayd2veightdx2 = 0.0
     do k=1,neigh%numInner
        do j=1,sys%dimen
@@ -461,15 +465,15 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     enddo
     SumTayd2veightdxmdxn = -SumTayd2veightdx2 
     
-    !---------------------------------------------------------------------------
-    !  Calculate the (Sum_j w_j*T_j) *Sum_{j=1}^{Ndata} (Tay_j * d2weight_j/dx2)
-    !---------------------------------------------------------------------------
+    !------------------------------------------------------------------------------------------------
+    !  Calculate the (Sum_j w_j*T_j) *Sum_{j=1}^{Ndata} (Tay_j * d2weight_j/dx2) For Tay*d2Weightdx2
+    !------------------------------------------------------------------------------------------------
     Sumd2veightdx2 = -Sumd2veightdx2*V
     Sumd2veightdxmdxn = -Sumd2veightdxmdxn*V
 
-    !------------------------------------------------------------------------------------
-    !  Calculate the (Sum_{j=1}^{Ndata} -Tay_j * dveightdx)*(Sum_{j=1}^{Ndata} dveightdx)
-    !------------------------------------------------------------------------------------
+    !---------------------------------------------------------------------------------------------------------
+    !  Calculate the (Sum_{j=1}^{Ndata} -Tay_j * dveightdx)*(Sum_{j=1}^{Ndata} dveightdx) For Tay*d2Weightdx2
+    !---------------------------------------------------------------------------------------------------------
     SumTaydvdxm = 0.0
     !SumTaydvdxn = 0.0
     do k=1,neigh%numInner
@@ -498,9 +502,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     enddo
     SumTaydvmSumdvn = -SumTaydvmSumdvm
 
-    !---------------------------------------------------------------------------
-    !  Calculate (Sum_{j=1}^{Ndata} 2.0 * w_j * T_j) * (Sum dvdx)*(Sum dvdx)
-    !---------------------------------------------------------------------------
+    !------------------------------------------------------------------------------------------------------
+    !  Calculate (Sum_{j=1}^{Ndata} 2.0 * w_j * T_j) * (Sum dvdx)*(Sum dvdx)  For Tay*d2Weightdx2
+    !-------------------------------------------------------------------------------------------------------
     sqrSumdveightdx = 2.0*V*sqrSumdveightdx    !FIXME 
     sqrSumdveightdxmdxn = 2.0*V*sqrSumdveightdxmdxn   !FIXME
     
@@ -509,6 +513,20 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     !---------------------------------------------------------------------------
     d2Weightdx2 = SumTayd2veightdx2 + Sumd2veightdx2 + 2.0*SumTaydvmSumdvm + sqrSumdveightdx
     d2Weightdxmdxn = SumTayd2veightdxmdxn + Sumd2veightdxmdxn + 2.0*SumTaydvmSumdvn + sqrSumdveightdxmdxn 
+
+    !---------------------------------------------------------------------------
+    ! Calculate d2Vdx2
+    !---------------------------------------------------------------------------
+    do j=1,sys%dimen
+       do i=1,sys%dimen
+          d2Vdx2(j,i) = d2Weightdx2(j,i) + sqrSumdveightdx(j,i) + SumTaydvmSumdvm(j,i) + Sumd2veightdx2(j,i) +&
+                SumTayd2veightdx2(j,i) + SumWd2Taydx2_tmp1(j,i) + d2Taydx2_tmp2(j,i) 
+          !d2Vdxmdxn(j,i) = d2Weightdxmdxn(j,i) + sqrSumdveightdxmdxn(j,i) + SumTaydvmSumdvn(j,i) + &
+          !     Sumd2veightdxmdxn(j,i) +  SumTayd2veightdxmdxn(j,i) + SumWd2Taydxmdxn_tmp1(j,i) + &
+          !     + d2Taydxmdxn_tmp2(j,i) 
+       enddo
+    enddo
+    d2Vdxmdxn = -d2Vdx2
 
   return
 end subroutine
