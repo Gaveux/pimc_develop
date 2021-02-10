@@ -1,13 +1,12 @@
 
 interface
-  subroutine intern(sys,x,r,dr,d2rdx2,d2rdxmdxn)
+  subroutine intern(sys,x,r,dr,d2rdx2)
     use molecule_specs
     type (molsysdat), intent(in) :: sys
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
-    real(kind=8), dimension(sys%dimen,sys%dimen,sys%nbond), intent(out) :: d2rdx2
-    real(kind=8), dimension(sys%dimen,sys%dimen,sys%nbond), intent(out) :: d2rdxmdxn
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(out) :: d2rdx2
 
   end subroutine
 end interface
