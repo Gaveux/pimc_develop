@@ -1,7 +1,7 @@
 
 
 subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
-                drdx,d2rdx2) 
+                drdx,d2rdx2,d2Vdx2) 
     use molecule_specs
     use interpolation
 
@@ -90,7 +90,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
     real(kind=8), dimension(sys%dimen,sys%dimen) :: d2Weightdxmdxn !intent(out)
 
     ! d2Vdx2
-    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Vdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom), intent(out) :: d2Vdx2
 
     !DWeightdxm
     real(kind=8), dimension(size(Weight),sys%dimen,sys%natom) :: DWeightdx
@@ -617,8 +617,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,&
           enddo
        enddo
     enddo
-    print *, d2Vdx2
-    call exit(0)
+    !print *, d2Vdx2
+    !call exit(0)
 
   return
 end subroutine

@@ -38,15 +38,10 @@
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Taydx2 ! intent(out)
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Taydxmdxn ! intent(out)
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2wdx2
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2wdxmdxn
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: dWTdx2
-            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: dWTdxmdxn
-            !real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Vdx2
-            !real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom) :: d2Vdxmdxn
-            
+            ! second derivatives of V w.r.t. Cartesian - for virial energy estimator
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom,param%sys%natom) :: d2Vdx2
+            ! 2.0*dVdx*d2Vdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dVdxd2Vdx2
 
             !Variables used internally by the modified shepard code
               
@@ -61,20 +56,8 @@
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
-
-            ! second term in d2Taydx2, r^2 * (ut*r^2*drdx) * ut
-            real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_mb
-            real(kind=8), dimension(size(Weight),param%sys%nbond,param%sys%dimen) :: v2detadxut_nb            
-
-            ! d2Vdx2 and d2Vdxmdxn
-!            real(kind=8), dimension(param%sys%dimen,param%sys%dimen) :: d2Vdx2
-!            real(kind=8), dimension(param%sys%dimen,param%sys%dimen) :: d2Vdxmdxn
-
-            ! dVdxd2Vdx2
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dVdxd2Vdx2_mb
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: dVdxd2Vdx2_nb
             
-            integer :: i,j,k
+            integer :: i,j,k,l
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
@@ -92,7 +75,7 @@
 
             !if (param%interp%ipart == 1) then
             call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,&
-            dr,d2rdx2)
+            dr,d2rdx2,d2Vdx2)
             !endif
 
             V = V - param%interp%vmin
@@ -103,43 +86,31 @@
             enddo
 
             do j=1,param%sys%nbond
-                !print *, 'j= ', j
                 do k=1,param%sys%dimen
                     dV(k,param%sys%mb(j))=dV(k,param%sys%mb(j))+dVdR(j)*dr(k,param%sys%mb(j),j)
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
-                    !print *, dV(k,param%sys%mb(j)), dV(k,param%sys%nb(j))
                 enddo
-                !print *, ''
             enddo
-            !print *, param%sys%mb
-            !print *, param%sys%nb
-            !do i=1,param%sys%nbond
-            !   print *, dV(:,param%sys%mb(i)), param%sys%mb(i)
-            !   print *, dV(:,param%sys%nb(i)), param%sys%nb(i)
-            !   print *, ''
-            !enddo
-            !call exit(0)
+                !print *, dV 
+                !call exit(0)
 
             !-------------------------------------
-            ! Calculate dVdx * d2Vdx2
+            ! Calculate 2.0 * dVdx * d2Vdx2
             !-------------------------------------
-!            dVdxd2Vdx2_mb = 0.0
-!            dVdxd2Vdx2_nb = 0.0
-!            do k=1,param%sys%dimen
-!               do j=1,param%sys%nbond
-!                  do i=1,param%sys%dimen
-!                    dVdxd2Vdx2_mb(k,param%sys%mb(j)) = dVdxd2Vdx2_mb(k,param%sys%mb(i)) + dV(k,param%sys%mb(j))*d2Vdx2(k,i) &
-!                        + dV(k,param%sys%nb(j))*d2Vdxmdxn(k,i)
-!                    dVdxd2Vdx2_nb(k,param%sys%nb(j)) = dVdxd2Vdx2_nb(k,param%sys%nb(i)) + dV(k,param%sys%mb(j))*d2Vdxmdxn(k,i) &
-!                        + dV(k,param%sys%nb(j))*d2Vdx2(k,i)
-!                  enddo
-!               enddo
-!            enddo
-            ! I think dVdxd2Vdx2_mb and dVdxd2Vdx2_nb should be one variable
-            !print *, dVdxd2Vdx2_mb
-            !print *, ''
-            !print *, dVdxd2Vdx2_nb
-            !call exit(0)
+            dVdxd2Vdx2 = 0.0
+            do l=1,param%sys%dimen
+               do k=1,param%sys%natom
+                  do j=1,param%sys%natom
+                     do i=1,param%sys%dimen
+                        dVdxd2Vdx2(l,k) = dVdxd2Vdx2(l,k) + &
+                            dV(i,j)*d2Vdx2(l,i,j,k)
+                     enddo
+                  enddo
+               enddo
+            enddo
+            dVdxd2Vdx2 = 2.0*dVdxd2Vdx2
+            print *, dVdxd2Vdx2
+            call exit(0)
 
             r=1/r
 
