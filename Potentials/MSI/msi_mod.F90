@@ -44,6 +44,9 @@
               
             !derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr
+            !2nd derivative of bond lengths with respect to cartesians
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom, &
+            param%sys%natom,param%sys%nbond) :: d2rdx2
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Stores the value of the weight function
@@ -56,7 +59,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr)
+            call intern(param%sys,x,r,dr,d2rdx2)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
@@ -82,8 +85,8 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
+
             r=1/r
-           
 
         end subroutine potential
 
