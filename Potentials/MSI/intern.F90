@@ -1,12 +1,13 @@
 !Computes the bond length coordinates and the first and second derivatives of these coordinates with respect
 !to cartesians if these values are specified
-subroutine intern(sys,x,r,dr,d2r)
+subroutine intern(sys,x,r,dr,d2r,dr2dxdx)
     use molecule_specs
     type (molsysdat), intent(in) :: sys
     real(kind=8), dimension(sys%dimen,sys%natom), intent(in) :: x
     real(kind=8), dimension(sys%nbond), intent(out) :: r
     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(out) :: dr
     real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(out) :: d2r
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(out) :: dr2dxdx
     real(kind=8), dimension(sys%dimen,sys%dimen) :: dxdx
 
     integer :: i,j,k
@@ -20,12 +21,24 @@ subroutine intern(sys,x,r,dr,d2r)
     enddo
 
     dr=0.0d0
-    
     do j=1,sys%dimen
         do i=1,sys%nbond
             dr(j,sys%mb(i),i)=(x(j,sys%mb(i))-x(j,sys%nb(i)))/r(i)
             dr(j,sys%nb(i),i)=-dr(j,sys%mb(i),i)
         enddo
+    enddo
+
+    dr2dxdx = 0.0
+    do m=1,sys%nbond
+       do k=1,sys%natom
+          do l=1,sys%natom
+             do j=1,sys%dimen
+                do i=1,sys%dimen
+                   dr2dxdx(j,i,k,l,m) = dr(j,k,m)*dr(i,l,m)
+                enddo
+             enddo
+          enddo
+       enddo
     enddo
 
     dxdx = 0.0

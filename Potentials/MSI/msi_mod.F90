@@ -47,6 +47,9 @@
             !2nd derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom, &
             param%sys%natom,param%sys%nbond) :: d2rdx2
+            ! drdx * drdx same r different x
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom, &
+            param%sys%natom,param%sys%nbond) :: dr2dxdx
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Stores the value of the weight function
@@ -59,7 +62,7 @@
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr,d2rdx2)
+            call intern(param%sys,x,r,dr,d2rdx2,dr2dxdx)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
@@ -69,7 +72,7 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,dr,d2rdx2,dr2dxdx)
             !endif
 
             V = V - param%interp%vmin
