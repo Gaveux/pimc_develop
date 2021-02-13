@@ -156,7 +156,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2
     
     V = energy 
 
-    call cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp)
+    call cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp,DWeight,Tay,V)
 
   return
 end subroutine
