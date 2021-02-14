@@ -38,25 +38,35 @@
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
-            
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom,&
+            param%sys%natom) :: d2Vdx2
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: ddx_Fsqr
 
             !Variables used internally by the modified shepard code
               
             !derivative of bond lengths with respect to cartesians
             real(kind=8), dimension(param%sys%dimen,param%sys%natom,param%sys%nbond) :: dr
+            !2nd derivative of bond lengths with respect to cartesians
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom, &
+            param%sys%natom,param%sys%nbond) :: d2rdx2
+            ! drdx * drdx same r different x
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom, &
+            param%sys%natom,param%sys%nbond) :: dr2dxdx
             !Derivatives of the potential with respect to internal coordinates
             real(kind=8), dimension(param%sys%nbond) :: dVdr
             !Stores the value of the weight function
             real(kind=8), dimension(param%interp%ndata) :: Weight
             real(kind=8), dimension(param%interp%ndata) :: RawWeightTemp
 
+            ! test
+            real(kind=8), dimension(param%sys%dimen) :: temp
             
-            integer :: j,k
+            integer :: i,j,k,l
             include 'intern.int'
             include 'neigh.int'
             include 'calcen.int'
 
-            call intern(param%sys,x,r,dr)
+            call intern(param%sys,x,r,dr,d2rdx2,dr2dxdx)
 
             !Update the inner neighbour list each potential evaluation
             call neighbour(param%sys,param%interp,param%pot,Weight,r,param%neighlist(ind),RawWeightTemp)
@@ -66,7 +76,7 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,dr,d2rdx2,dr2dxdx,d2Vdx2)
             !endif
 
             V = V - param%interp%vmin
@@ -82,8 +92,43 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
+
+            ! d2Vdx2
+                    !print *, d2Vdx2(:,:,1,2)
+                    !print *, d2Vdx2(1,2,1,2)
+                    !call exit(0)
+            ! 2.0*dVdx*d2Vdx2
+            ddx_Fsqr = 0.0
+            do l=1,param%sys%dimen
+               do k=1,param%sys%dimen
+                  do j=1,param%sys%natom
+                     do i=1,param%sys%natom
+                        !ddx_Fsqr(l,j) = ddx_Fsqr(l,j) + 2.0*dV(l,j)*d2Vdx2(l,k,j,i)
+                        ddx_Fsqr(l,i) = ddx_Fsqr(l,i) + 2.0*dV(k,j)*d2Vdx2(l,k,j,i) ! this is right
+                     enddo
+                  enddo
+               enddo
+            enddo
+
+            !! test
+            !temp = 0.0
+            !do i=1,param%sys%natom
+            !   do l=1,param%sys%dimen
+            !      do k=1,param%sys%dimen
+            !         temp(l) = temp(l) + dV(l,i)*d2Vdx2(l,k,i,2)
+            !     enddo
+            !   enddo
+            !enddo
+            !    print *, temp
+            
+
+                 !print *, dV
+                 !print *, ''
+                 !print *, ddx_Fsqr
+                 !call exit(0)
+
+
             r=1/r
-           
 
         end subroutine potential
 

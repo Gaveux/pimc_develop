@@ -1,6 +1,6 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2,dr2dxdx,d2Vdx2) 
     use molecule_specs
     use interpolation
 
@@ -17,6 +17,11 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), intent(out) :: V
     real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
 
+    ! drdx, d2rdx2, dr2dxdx(same r different x)
+    real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(in) :: drdx
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(in) :: d2rdx2
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(in) :: dr2dxdx
+
     real(kind=8), dimension(size(Weight)) :: Raw
     ! by defining the dimension of Raw to neigh%numInner, this restricts the
     ! size of array to the correct size w.r.t. each iteration within the dynamical array
@@ -27,11 +32,16 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(sys%nbond) :: SumDWeight
     real(kind=8) :: totsum, energy, temp
 
+    ! d2Vdx2 
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom), intent(out) :: d2Vdx2
+
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
     !Stores the zeta coordinates of the system
     real(kind=8), dimension(sys%nint,interp%ndata) :: z
     integer :: i,j,k
+
+    include 'cal_d2Vdx2.int'
     
     !---------------------------------------------------
     !  Calculate the Weights 
@@ -148,10 +158,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     enddo
     
     V = energy 
+
+    call cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp&
+    ,DWeight,Tay,V,dTaydR,d2Vdx2)
+
   return
 end subroutine
-
-
-
-
-

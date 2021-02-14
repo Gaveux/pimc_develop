@@ -4,6 +4,7 @@
         use interpolation
         type (molsysdat), intent(in) :: sys
         type (interp_params), intent(inout) :: interp
+        type (pot_data_point), dimension(:), pointer :: pot
         type (pot_data_point), dimension(:), pointer :: allpot
         character(len=80), intent(in) :: filename
      end
