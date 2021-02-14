@@ -1,6 +1,7 @@
 
 
-  subroutine cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp,DWeight,Tay,V)
+  subroutine cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp&
+  ,DWeight,Tay,V,dTaydR,d2Vdx2)
      use molecule_specs
      use interpolation
      
@@ -13,6 +14,7 @@
 
      real(kind=8), dimension(interp%ndata), intent(in) :: Tay
      real(kind=8), dimension(:), intent(in) :: Weight
+     real(kind=8), dimension(size(Weight),sys%nbond), intent(in) :: dTaydR
      real(kind=8), intent(in) :: V
      real(kind=8), dimension(sys%nbond,size(Weight)), intent(in) :: DWeight
      real(kind=8), dimension(:), intent(in) :: RawWeightTemp
@@ -50,6 +52,18 @@
      real(kind=8), dimension(size(Weight),sys%dimen,sys%natom) :: DTaydx 
      real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom) :: SumdWeightdxdTaydx
      real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom) :: SumdTaydxdWeightdx
+
+     ! Temp terms for d2Taydx2
+     real(kind=8), dimension(size(Weight),sys%nint,sys%dimen,sys%natom) :: SumUTr2drdx
+     real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen,sys%natom) :: Sumv2utdetadx
+
+     real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp1
+     real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp2
+     real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp3
+
+     real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom) :: Weightd2Taydx2
+
+     real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom), intent(out) :: d2Vdx2
 
 
      integer :: i,j,k,l,m,n
@@ -349,7 +363,155 @@
             !print *, SumdTaydxdWeightdx(:,:,1,2)
             !call exit(0)
      
+     !=========================================================
+     ! Below session is for d2Taydx2 
+     !=========================================================
+
+     !-----------------------------------------------
+     ! Sum_{l=1}^{N choose 2} detadz * r^{-2} * drdx
+     !-----------------------------------------------
+     SumUTr2drdx = 0.0
+     do k=1,neigh%numInner
+        do j=1,sys%nint
+           do l=1,sys%dimen
+              do i=1,sys%nbond
+                 SumUTr2drdx(k,j,l,sys%mb(i)) = SumUTr2drdx(k,j,l,sys%mb(i)) + &
+                     pot(neigh%inner(k))%ut(j,i)*r(i)**2*drdx(l,sys%mb(i),i)
+                 SumUTr2drdx(k,j,l,sys%nb(i)) = SumUTr2drdx(k,j,l,sys%nb(i)) + &
+                     pot(neigh%inner(k))%ut(j,i)*r(i)**2*drdx(l,sys%nb(i),i)
+              enddo
+           enddo
+        enddo
+     enddo
+
+     !------------------------------------------------
+     ! Sum_{i=1}^{3N-6} v2_i * ut_{il} * SumUTr2drdx
+     !------------------------------------------------
+     Sumv2utdetadx = 0.0
+     do k=1,neigh%numInner
+        do m=1,sys%nbond
+           do j=1,sys%nint
+              do l=1,sys%dimen
+                 do i=1,sys%natom
+                    Sumv2utdetadx(k,m,l,i) = Sumv2utdetadx(k,m,l,i) + & 
+                        SumUTr2drdx(k,j,l,i)*pot(neigh%inner(k))%ut(j,m) &
+                        * pot(neigh%inner(k))%v2(j)
+                 enddo
+              enddo
+           enddo
+        enddo
+     enddo
+
+     !----------------------------------------------------
+     ! Sum_{l=1}^{N choose 2} r_l * drdx * Sumv2utdetadx
+     !----------------------------------------------------
+     d2Taydx2_tmp1 = 0.0
+     do k=1,neigh%numInner
+        do m=1,sys%dimen
+           do l=1,sys%dimen
+              do n=1,sys%natom
+                 do i=1,sys%nbond
+                    d2Taydx2_tmp1(k,m,l,n,sys%mb(i)) = d2Taydx2_tmp1(k,m,l,n,sys%mb(i)) & 
+                      + Sumv2utdetadx(k,i,m,n)*drdx(l,sys%mb(i),i)*r(i)**2
+                    d2Taydx2_tmp1(k,m,l,n,sys%nb(i)) = d2Taydx2_tmp1(k,m,l,n,sys%nb(i)) & 
+                      + Sumv2utdetadx(k,i,m,n)*drdx(l,sys%nb(i),i)*r(i)**2
+                 enddo
+              enddo
+           enddo
+        enddo
+     enddo
+
+       !do j=1,sys%dimen
+       !   do i=1,sys%dimen
+       !      print *, d2Taydx2_tmp1(1,j,i,1,1)
+       !   enddo
+       !enddo
+       !call exit(0)
+
+     !--------------------------------------------------
+     ! Second term of d2Taydx2
+     !--------------------------------------------------
+     d2Taydx2_tmp2 = 0.0
+     do k=1,neigh%numInner
+        do m=1,sys%dimen
+           do n=1,sys%dimen
+              do l=1,sys%natom
+                 do j=1,sys%natom
+                    do i=1,sys%nbond
+                       d2Taydx2_tmp2(k,m,n,l,j) = d2Taydx2_tmp2(k,m,n,l,j) &
+                          - 2.0*dr2dxdx(m,n,l,j,i)*dTaydR(k,i)*r(i)
+                    enddo
+                 enddo
+              enddo
+           enddo
+        enddo
+     enddo
+         !do j=1,sys%dimen
+         !   do i=1,sys%dimen
+         !      print *, d2Taydx2_tmp2(1,j,i,2,1)
+         !   enddo
+         !enddo
+         !call exit(0)
      
+     !-------------------------------------------------
+     ! Third term of d2Taydx2
+     !-------------------------------------------------
+     d2Taydx2_tmp3 = 0.0
+     do k=1,neigh%numInner
+        do m=1,sys%dimen
+           do n=1,sys%dimen
+              do l=1,sys%natom
+                 do j=1,sys%natom
+                    do i=1,sys%nbond
+                       d2Taydx2_tmp3(k,m,n,l,j) = d2Taydx2_tmp3(k,m,n,l,j) &
+                          + d2rdx2(m,n,l,j,i)*dTaydR(k,i)
+                    enddo
+                 enddo
+              enddo
+           enddo
+        enddo
+     enddo
+
+          !do j=1,sys%dimen
+          !   do i=1,sys%dimen
+          !      print *, d2Taydx2_tmp3(1,j,i,1,2)
+          !   enddo
+          !enddo
+          !call exit(0)
+
+     !---------------------------------------------
+     ! Evaluate Sum_{j=1}^{Ndata} d2Tay_jdx2 
+     !---------------------------------------------
+     Weightd2Taydx2 = 0.0
+     do k=1,neigh%numInner
+        do m=1,sys%dimen
+           do n=1,sys%dimen
+              do l=1,sys%natom
+                 do i=1,sys%natom
+                    Weightd2Taydx2(m,n,l,i) = Weightd2Taydx2(m,n,l,i) + &
+                       (d2Taydx2_tmp3(k,m,n,l,i) + d2Taydx2_tmp1(k,m,n,l,i) + &
+                       d2Taydx2_tmp2(k,m,n,l,i))*Weight(k)
+                 enddo
+              enddo
+           enddo
+        enddo
+     enddo
+            !print *, Weightd2Taydx2(:,:,2,2)
+            !call exit(0)
+
+     !-------------------------------------------
+     ! Evaluate d2Vdx2
+     !-------------------------------------------
+     do l=1,sys%dimen
+        do k=1,sys%dimen
+           do j=1,sys%natom
+              do i=1,sys%natom
+                 d2Vdx2(l,k,j,i) = Weightd2Taydx2(l,k,j,i) + SumdWeightdxdTaydx(l,k,j,i) & 
+                    + SumdTaydxdWeightdx(l,k,j,i) + d2Weightdx2(l,k,j,i)
+              enddo
+           enddo
+        enddo
+     enddo
 
      return
   end subroutine

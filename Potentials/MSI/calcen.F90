@@ -1,6 +1,6 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2,dr2dxdx) 
+subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2,dr2dxdx,d2Vdx2) 
     use molecule_specs
     use interpolation
 
@@ -31,6 +31,9 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2
     real(kind=8), dimension(sys%nint,size(Weight)) :: DTay
     real(kind=8), dimension(sys%nbond) :: SumDWeight
     real(kind=8) :: totsum, energy, temp
+
+    ! d2Vdx2 
+    real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom), intent(out) :: d2Vdx2
 
     !Stores the value of the taylor series expansions
     real(kind=8), dimension(interp%ndata) :: Tay
@@ -156,7 +159,8 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp,drdx,d2rdx2
     
     V = energy 
 
-    call cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp,DWeight,Tay,V)
+    call cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp&
+    ,DWeight,Tay,V,dTaydR,d2Vdx2)
 
   return
 end subroutine

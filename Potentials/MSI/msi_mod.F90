@@ -38,6 +38,8 @@
             real(kind=8), intent(out) :: V          
             !Calculated derivatives of the potential energy with respect to cartesian coordinates - optional
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
+            real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom,&
+            param%sys%natom) :: d2Vdx2
             
 
             !Variables used internally by the modified shepard code
@@ -72,7 +74,7 @@
             !a slight shuffling of the variables in the calcen2w.f90 file to make them compatible
             !with the rest of the code
             !if (param%interp%ipart == 1) then
-            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,dr,d2rdx2,dr2dxdx)
+            call calcen(param%sys,param%interp,param%pot,param%neighlist(ind),Weight,r,V,dVdr,RawWeightTemp,dr,d2rdx2,dr2dxdx,d2Vdx2)
             !endif
 
             V = V - param%interp%vmin
@@ -88,6 +90,10 @@
                     dV(k,param%sys%nb(j))=dV(k,param%sys%nb(j))+dVdR(j)*dr(k,param%sys%nb(j),j)
                 enddo
             enddo
+
+            ! d2Vdx2
+                    !print *, d2Vdx2(:,:,1,1)
+                    !call exit(0)
 
             r=1/r
 

@@ -1,6 +1,6 @@
 
 interface
-   subroutine cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp,DWeight,Tay,V)    
+   subroutine cal_d2Vdx2(sys,interp,pot,neigh,r,drdx,d2rdx2,dr2dxdx,Weight,RawWeightTemp,DWeight,Tay,V,dTaydR,d2Vdx2)    
     
       use molecule_specs
       use interpolation
@@ -13,7 +13,9 @@ interface
       type (pot_data_point), dimension(:), pointer :: pot
 
       real(kind=8), dimension(interp%ndata), intent(in) :: Tay
+
       real(kind=8), dimension(:), intent(in) :: Weight
+      real(kind=8), dimension(size(Weight),sys%nbond), intent(in) :: dTaydR
       real(kind=8), intent(in) :: V
       real(kind=8), dimension(sys%nbond,size(Weight)), intent(in) :: DWeight
 
@@ -22,6 +24,7 @@ interface
       real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond), intent(in) :: drdx
       real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(in):: d2rdx2
       real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom,sys%nbond), intent(in):: dr2dxdx
+      real(kind=8), dimension(sys%dimen,sys%dimen,sys%natom,sys%natom), intent(out):: d2Vdx2
 
    end subroutine
 end interface
