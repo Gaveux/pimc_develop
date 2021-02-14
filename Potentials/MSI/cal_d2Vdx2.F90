@@ -513,5 +513,9 @@
         enddo
      enddo
 
+     !print *, d2Vdx2(:,:,1,5)
+     !print *, d2Vdx2(:,:,5,1)
+     !call exit(0)
+
      return
   end subroutine

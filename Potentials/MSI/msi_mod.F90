@@ -60,6 +60,9 @@
 
             ! test
             real(kind=8), dimension(param%sys%dimen) :: temp
+            real(kind=8), dimension(param%sys%natom) :: temp2
+            real(kind=8) :: temp3
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: temp4
             
             integer :: i,j,k,l
             include 'intern.int'
@@ -93,39 +96,20 @@
                 enddo
             enddo
 
-            ! d2Vdx2
-                    !print *, d2Vdx2(:,:,1,2)
-                    !print *, d2Vdx2(1,2,1,2)
-                    !call exit(0)
-            ! 2.0*dVdx*d2Vdx2
             ddx_Fsqr = 0.0
             do l=1,param%sys%dimen
-               do k=1,param%sys%dimen
+               do k=1,param%sys%natom
                   do j=1,param%sys%natom
-                     do i=1,param%sys%natom
-                        !ddx_Fsqr(l,j) = ddx_Fsqr(l,j) + 2.0*dV(l,j)*d2Vdx2(l,k,j,i)
-                        ddx_Fsqr(l,i) = ddx_Fsqr(l,i) + 2.0*dV(k,j)*d2Vdx2(l,k,j,i) ! this is right
+                     temp2(j) = 0.0
+                     do i=1,param%sys%dimen
+                        temp2(j) = temp2(j) + dV(i,j)*d2Vdx2(i,l,j,k)
                      enddo
+                     ddx_Fsqr(l,k) = ddx_Fsqr(l,k) + 2.0*temp2(j)
                   enddo
                enddo
             enddo
-
-            !! test
-            !temp = 0.0
-            !do i=1,param%sys%natom
-            !   do l=1,param%sys%dimen
-            !      do k=1,param%sys%dimen
-            !         temp(l) = temp(l) + dV(l,i)*d2Vdx2(l,k,i,2)
-            !     enddo
-            !   enddo
-            !enddo
-            !    print *, temp
-            
-
-                 !print *, dV
-                 !print *, ''
-                 !print *, ddx_Fsqr
-                 !call exit(0)
+            print *, ddx_Fsqr
+            call exit(0)
 
 
             r=1/r
