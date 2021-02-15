@@ -74,13 +74,24 @@
      !-------------------------------------------------
      do k=1,neigh%numInner
         temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
-        temp2 = -(interp%ipow2+2.0)*temp*RawWeightTemp(k)
-        temp3 = 2.0*temp
+        temp2 = (interp%ipow2+2.0)*temp*RawWeightTemp(k)
+        temp3 = -2.0*temp
         do i=1,sys%nbond
            D2veightdr_tmp1(i,k) = temp2*(r(i)-pot(neigh%inner(k))%r(i))*r(i)**2
-           D2veightdr_tmp2(i,k) = temp*r(i)**4
+           D2veightdr_tmp2(i,k) = -temp*r(i)**4
            D2veightdr_tmp3(i,k) = temp3*(r(i)-pot(neigh%inner(k))%r(i))*r(i)**3
-           D2veightdr_tmp4(i,k) = -temp*(r(i)-pot(neigh%inner(k))%r(i))*r(i)**2
+           D2veightdr_tmp4(i,k) = temp*(r(i)-pot(neigh%inner(k))%r(i))*r(i)**2
+        enddo
+     enddo
+     dveightdx_tmp1 = 0.0
+     do k=1,neigh%numInner
+        do j=1,sys%dimen
+           do i=1,sys%nbond
+              dveightdx_tmp1(k,j,sys%mb(i)) = dveightdx_tmp1(k,j,sys%mb(i)) + &
+                   D2veightdr_tmp1(i,k)*drdx(j,sys%mb(i),i)
+              dveightdx_tmp1(k,j,sys%nb(i)) = dveightdx_tmp1(k,j,sys%nb(i)) + &
+                   D2veightdr_tmp1(i,k)*drdx(j,sys%nb(i),i)
+           enddo
         enddo
      enddo
         !print *, D2veightdr_tmp1(:,1)
@@ -90,6 +101,7 @@
         !print *, D2veightdr_tmp3(:,1)
         !print *, ''
         !print *, D2veightdr_tmp4(:,1)
+
      zdzdx_tmp1 = 0.0
      do k=1,neigh%numInner
         do j=1,sys%dimen
@@ -98,18 +110,6 @@
                    (r(i)-pot(neigh%inner(k))%r(i))*drdx(j,sys%mb(i),i)*r(i)**2
               zdzdx_tmp1(k,j,sys%nb(i)) = zdzdx_tmp1(k,j,sys%nb(i)) + &
                    (r(i)-pot(neigh%inner(k))%r(i))*drdx(j,sys%nb(i),i)*r(i)**2
-           enddo
-        enddo
-     enddo
-
-     dveightdx_tmp1 = 0.0
-     do k=1,neigh%numInner
-        do j=1,sys%dimen
-           do i=1,sys%nbond
-              dveightdx_tmp1(k,j,sys%mb(i)) = dveightdx_tmp1(k,j,sys%mb(i)) + &
-                   D2veightdr_tmp1(i,k)*drdx(j,sys%mb(i),i)
-              dveightdx_tmp1(k,j,sys%nb(i)) = dveightdx_tmp1(k,j,sys%nb(i)) + &
-                   D2veightdr_tmp1(i,k)*drdx(j,sys%nb(i),i)
            enddo
         enddo
      enddo
@@ -264,7 +264,8 @@
         do k=1,sys%dimen
            do j=1,sys%natom
               do i=1,sys%natom
-                 d2Weightdx2_tmp2(l,k,j,i) = 2.0*SumTaydveightdx(l,j)*Sumdveightdx(k,i)
+                 d2Weightdx2_tmp2(l,k,j,i) = SumTaydveightdx(l,j)*Sumdveightdx(k,i) &
+                    + SumTaydveightdx(k,i)*Sumdveightdx(l,j)
               enddo
            enddo
         enddo

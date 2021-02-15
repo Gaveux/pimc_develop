@@ -108,8 +108,8 @@
                   enddo
                enddo
             enddo
-            print *, ddx_Fsqr
-            call exit(0)
+                 !print *, ddx_Fsqr
+                 !call exit(0)
 
 
             r=1/r
