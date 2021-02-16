@@ -70,6 +70,7 @@ module pimc_structures
         real(kind=8), dimension(:,:), pointer :: x    ! position
         real(kind=8), dimension(:), pointer :: r      ! bond lengths
         real(kind=8), dimension(:,:), pointer :: dVdx     ! derivs w.r.t. cartesians
+        real(kind=8), dimension(:,:), pointer :: ddx_Fsqr ! d/dx (dVdx)**2
         !real(kind=8), dimension(:,:,:,:), pointer :: d2Vdx2   ! derivs w.r.t. cartesians
     end type pimc_particle
     !-------------------------
@@ -101,6 +102,8 @@ module pimc_structures
         if (ierr.ne.0) stop ' Error allocating pimc_particle%dVdx'
         !allocate(this%d2Vdx2(ndimen,ndimen,natom,natom),stat=ierr)
         !if (ierr.ne.0) stop ' Error allocating pimc_particle%d2Vdx2'
+        if (ierr.ne.0) stop ' Error allocating pimc_particle%ddx_Fsqr'
+        allocate(this%ddx_Fsqr(ndimen,natom),stat=ierr)
         return
     end subroutine pimc_particle_init
     !----------------------------
@@ -133,6 +136,11 @@ module pimc_structures
                 !enddo
             !enddo
         !enddo
+        do i=1,size(Win%ddx_Fsqr,dim=1)
+           do j=1,size(Win%dVdx,dim=2)
+              Wout%ddx_Fsqr(i,j) = Win%ddx_Fsqr(i,j)
+           enddo
+        enddo
 
         return
     end subroutine pimc_particle_copy

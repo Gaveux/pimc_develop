@@ -137,7 +137,7 @@ program pimc90
     do i=1,pimc%NumBeadsEff
 #if POT == 0
       !MSI potential energy surfaces
-      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)
+      call potential(i,pot,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx,Beads(i)%ddx_Fsqr)
 #else
       !Analytic potential energy surfaces
       call potential(sys,Beads(i)%x,Beads(i)%r,Beads(i)%VCurr,Beads(i)%dVdx)

@@ -26,7 +26,7 @@
 
         !Evaluate the potential energy of the system and optionally the cartesian first and second derivatives
         !of the potential.  
-        subroutine potential(ind,param,x,r,V,dV)
+        subroutine potential(ind,param,x,r,V,dV,ddx_Fsqr)
             integer, intent(in) :: ind
             !declaration of the variables passed to the subroutine
             type (msi_params) :: param
@@ -40,7 +40,7 @@
             real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: dV 
             real(kind=8), dimension(param%sys%dimen,param%sys%dimen,param%sys%natom,&
             param%sys%natom) :: d2Vdx2
-            real(kind=8), dimension(param%sys%dimen,param%sys%natom) :: ddx_Fsqr
+            real(kind=8), dimension(param%sys%dimen,param%sys%natom), intent(out) :: ddx_Fsqr
 
             !Variables used internally by the modified shepard code
               
