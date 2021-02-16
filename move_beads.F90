@@ -370,7 +370,7 @@ module moves
                     sigma = sqrt(pimc%move%AtomDisp/sys%mass(n))
        
                     do i=1,pimc%NumBeadsEff
-                        Beads(i)%x(n,j) = Beads(i)%x(n,j) + sigma*rho
+                        Beads(i)%x(j,n) = Beads(i)%x(j,n) + sigma*rho
                     enddo
        
                 enddo
