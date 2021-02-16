@@ -96,6 +96,11 @@ module Estimator_class
                     call update(this%vars(1),results(1))
                     call update(this%vars(4),results(2))
                     call update(this%vars(7),results(3))
+  
+                    call energy_ca_cv(sys,pimc,Beads,results)
+                    call update(this%vars(3),results(1))
+                    call update(this%vars(6),results(2))
+                    call update(this%vars(9),results(3))
 
                 !Else if we are using the suzuki-chin action use the suzuki-chin action estimators
                 else if (pimc%act%act_type.eq.3) then
@@ -445,6 +450,7 @@ module Estimator_class
         !Estimators for the chin action
         !==========================================================================
 
+
         subroutine energy_thermo_ca(sys,pimc,Beads,results)
             type (molsysdat), intent(in) :: sys
             type (pimc_par), intent(in) :: pimc
@@ -524,6 +530,112 @@ module Estimator_class
             return
         end subroutine energy_thermo_ca
 
+     
+        subroutine energy_ca_cv(sys,pimc,Beads,results)
+            type (molsysdat), intent(in) :: sys
+            type (pimc_par), intent(in) :: pimc
+            type (pimc_particle), dimension(:), pointer :: Beads
+            real(kind=8), dimension(3), intent(out) :: results
+            real(kind=8), dimension(sys%dimen,sys%natom) :: cv
+
+            
+            real(kind=8) :: e, ke, pe, frc, dsq, tdsq, ttemp_frc, temp_frc
+            real(kind=8) :: dsq_a, dsq_b, dsq_c, frc_a, frc_b, frc_c, pe_a, pe_b, pe_c
+            real(kind=8) :: n2b, r_dVdr_a, r_dVdr_b, r_dVdr_c, ttemp_ke_frc, temp_ke_frc
+            real(kind=8) :: ke_frc, r_dVdr_tmp, r_dVdr, ke_frc_a, ke_frc_b, ke_frc_c
+
+            integer :: i,j,k
+
+            ke = 0.0
+            pe = 0.0
+            frc = 0.0
+            frc_a=0.0
+            frc_b=0.0
+            frc_c=0.0
+            pe_a=0.0
+            pe_b=0.0
+            pe_c=0.0
+            r_dVdr_a = 0.0
+            r_dVdr_b = 0.0
+            r_dVdr_c = 0.0
+            ke_frc = 0.0
+            
+            ! compute the centroid
+            do i=1,sys%natom
+                do j=1,sys%dimen
+                    cv(j,i)=0.0
+                    do k=1,pimc%NumBeadsEff
+                        cv(j,i)=cv(j,i)+Beads(k)%x(j,i)
+                    enddo
+                    cv(j,i)=cv(j,i)/pimc%NumBeadsEff
+                enddo
+            enddo
+
+  
+            do i=0,pimc%NumBeads-1    
+                !dsq = 0.0
+                r_dVdr = 0.0
+                temp_frc = 0.0
+                temp_ke_frc = 0.0
+                
+                do j=1,sys%natom
+                    !tdsq=0.0
+                    r_dVdr_tmp = 0.0
+                    ttemp_frc = 0.0
+                    ttemp_ke_frc = 0.0
+                    r_dVdr_a = 0.0
+                    r_dVdr_b = 0.0
+                    r_dVdr_c = 0.0
+                    do k=1,sys%dimen
+                        r_dVdr_a = r_dVdr_a + (Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%dVdx(k,j)
+                        r_dVdr_b = r_dVdr_b + (Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%dVdx(k,j)
+                        r_dVdr_c = r_dVdr_c + (Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%dVdx(k,j)
+                        
+                        ! can be optimised
+                        frc_a = pimc%act%a1*Beads(3*i+1)%dVdx(k,j)**2
+                        ke_frc_a = pimc%act%a1*(Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%ddx_Fsqr(k,j)
+                        frc_b= (1.0-2.0*pimc%act%a1)*Beads(3*i+2)%dVdx(k,j)**2
+                        ke_frc_b = (1.0-2.0*pimc%act%a1)*(Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%ddx_Fsqr(k,j)
+                        frc_c= pimc%act%a1*Beads(3*i+3)%dVdx(k,j)**2
+                        ke_frc_c = pimc%act%a1*(Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%ddx_Fsqr(k,j)
+                        
+                        ttemp_frc = ttemp_frc + (frc_a+frc_b+frc_c)
+                        ttemp_ke_frc = ttemp_frc + (ke_frc_a + ke_frc_b + ke_frc_c)
+
+                    enddo
+                    r_dVdr = r_dVdr + pimc%act%v1*r_dVdr_a + pimc%act%v2*r_dVdr_b + pimc%act%v1*r_dVdr_c
+                    temp_frc = temp_frc + ttemp_frc/sys%mass(j)
+                    temp_ke_frc = temp_ke_frc + ttemp_ke_frc/sys%mass(j)
+                enddo
+
+                ke = ke + r_dVdr
+                frc = frc + temp_frc
+                ke_frc = ke_frc + temp_ke_frc
+                pe_a=Beads(3*i+1)%VCurr*pimc%act%v1
+                pe_b=Beads(3*i+2)%VCurr*pimc%act%v2
+                pe_c=Beads(3*i+3)%VCurr*pimc%act%v1
+                pe = pe + pe_a + pe_b + pe_c
+
+            enddo
+
+            pe = pe*pimc%invNumBeads
+            ke = ke*pimc%invNumBeads*0.5
+            frc = frc*pimc%act%u0*pimc%Beta**2*(pimc%invNumBeads**3)
+            ke_frc = ke_frc*pimc%act%u0*(pimc%Beta**2)*(pimc%invNumBeads**3)
+
+            n2b = 1.5*dble(sys%dimen)*dble(sys%natom)**pimc%invBeta
+
+            ke = n2b + ke + ke_frc
+            pe = pe + 2.0*frc
+            e = ke + pe 
+ 
+            !Update the energies
+            results(1)=e
+            results(2)=ke
+            results(3)=pe
+            
+            return
+        end subroutine energy_ca_cv
 
         !==========================================================================
         !==========================================================================
@@ -736,7 +848,7 @@ module Estimator_class
                         tempf2_even= (1.0-pimc%act%alpha)*Beads(i+1)%dVdx(k,j)**2
                         tempf2_even2 = (1.0-pimc%act%alpha)*(Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%ddx_Fsqr(k,j)
                         tmp_frc = tmp_frc + tempf2_odd + tempf2_even
-                        tmp_frc2 = tmp_frc + 0.5*(tempf2_odd2+tempf2_even2)
+                        tmp_frc2 = tmp_frc2 + (tempf2_odd2+tempf2_even2)
                     enddo
                     temp_sc_frc = temp_sc_frc + tmp_frc/sys%mass(j)
                     temp_sc_frc2 = temp_sc_frc2 + tmp_frc2/sys%mass(j)
@@ -749,11 +861,11 @@ module Estimator_class
             enddo
 
             frc_sc = frc_sc*pimc%Beta**2*(pimc%invNumBeads**3)/(9.0)
-            frc2_sc = (frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
+            frc2_sc = 0.5*(frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
 
             pe_sc = pe_sc*pimc%invNumBeads
             pe_sc=pe_sc+2.0*frc_sc
-            ke_sc=n2b+ke_sc+frc2_sc
+            ke_sc=n2b+ke_sc+frc2_sc+frc_sc
 
             e_sc=ke_sc+pe_sc
             
