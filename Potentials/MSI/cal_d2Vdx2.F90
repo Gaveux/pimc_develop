@@ -352,9 +352,9 @@
               do j=1,sys%natom
                  do i=1,neigh%numInner
                     SumdWeightdxdTaydx(m,l,k,j) = SumdWeightdxdTaydx(m,l,k,j) + &
-                        2.0*DWeightdx(i,m,k)*DTaydx(i,l,j)
+                        DWeightdx(i,m,k)*DTaydx(i,l,j)
                     SumdTaydxdWeightdx(m,l,k,j) = SumdTaydxdWeightdx(m,l,k,j) + &
-                        2.0*DTaydx(i,m,k)*DWeightdx(i,l,j)
+                        DTaydx(i,m,k)*DWeightdx(i,l,j)
                  enddo
               enddo
            enddo
@@ -367,7 +367,6 @@
      !=========================================================
      ! Below session is for d2Taydx2 
      !=========================================================
-
      !-----------------------------------------------
      ! Sum_{l=1}^{N choose 2} detadz * r^{-2} * drdx
      !-----------------------------------------------
@@ -422,12 +421,12 @@
         enddo
      enddo
 
-       !do j=1,sys%dimen
-       !   do i=1,sys%dimen
-       !      print *, d2Taydx2_tmp1(1,j,i,1,1)
-       !   enddo
-       !enddo
-       !call exit(0)
+           !do j=1,sys%dimen
+           !   do i=1,sys%dimen
+           !      print *, d2Taydx2_tmp1(1,j,i,2,1), d2Taydx2_tmp1(1,j,i,1,2)
+           !   enddo
+           !enddo
+           !call exit(0)
 
      !--------------------------------------------------
      ! Second term of d2Taydx2
@@ -514,9 +513,9 @@
         enddo
      enddo
 
-     !print *, d2Vdx2(:,:,1,5)
-     !print *, d2Vdx2(:,:,5,1)
-     !call exit(0)
+             !print *, d2Vdx2(:,:,1,5)
+             !print *, d2Vdx2(:,:,5,1)
+             !call exit(0)
 
      return
   end subroutine
