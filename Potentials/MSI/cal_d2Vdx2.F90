@@ -338,8 +338,8 @@
      do k=1,neigh%numInner
         do j=1,sys%dimen
            do i=1,sys%nbond
-              DTaydx(k,j,sys%mb(i)) = DTaydx(k,j,sys%mb(i)) + Tay(k)*drdx(j,sys%mb(i),i)
-              DTaydx(k,j,sys%nb(i)) = DTaydx(k,j,sys%nb(i)) + Tay(k)*drdx(j,sys%nb(i),i)
+              DTaydx(k,j,sys%mb(i)) = DTaydx(k,j,sys%mb(i)) + DTaydR(k,i)*drdx(j,sys%mb(i),i)
+              DTaydx(k,j,sys%nb(i)) = DTaydx(k,j,sys%nb(i)) + DTaydR(k,i)*drdx(j,sys%nb(i),i)
            enddo
         enddo
      enddo
