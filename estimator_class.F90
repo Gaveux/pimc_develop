@@ -541,8 +541,8 @@ module Estimator_class
             
             real(kind=8) :: e, ke, pe, frc, dsq, tdsq, ttemp_frc, temp_frc
             real(kind=8) :: dsq_a, dsq_b, dsq_c, frc_a, frc_b, frc_c, pe_a, pe_b, pe_c
-            real(kind=8) :: n2b, r_dVdr_a, r_dVdr_b, r_dVdr_c, ttemp_ke_frc, temp_ke_frc
-            real(kind=8) :: ke_frc, r_dVdr_tmp, r_dVdr, ke_frc_a, ke_frc_b, ke_frc_c
+            real(kind=8) :: n2b
+            real(kind=8) :: ke_tmp,ke_frc1,ke_frc2,ke_frc3,ke_frc_tmp,ke_frc
 
             integer :: i,j,k
 
@@ -555,10 +555,7 @@ module Estimator_class
             pe_a=0.0
             pe_b=0.0
             pe_c=0.0
-            r_dVdr_a = 0.0
-            r_dVdr_b = 0.0
-            r_dVdr_c = 0.0
-            ke_frc = 0.0
+            ke_tmp=0.0
             
             ! compute the centroid
             do i=1,sys%natom
@@ -570,47 +567,46 @@ module Estimator_class
                     cv(j,i)=cv(j,i)/pimc%NumBeadsEff
                 enddo
             enddo
-
   
             do i=0,pimc%NumBeads-1    
-                !dsq = 0.0
-                r_dVdr = 0.0
-                temp_frc = 0.0
-                temp_ke_frc = 0.0
+                dsq = 0.0
+                temp_frc=0.0
+                ke_frc = 0.0
                 
                 do j=1,sys%natom
-                    !tdsq=0.0
-                    r_dVdr_tmp = 0.0
-                    ttemp_frc = 0.0
-                    ttemp_ke_frc = 0.0
-                    r_dVdr_a = 0.0
-                    r_dVdr_b = 0.0
-                    r_dVdr_c = 0.0
+                    tdsq=0.0
+                    ttemp_frc=0.0
+                    ke_frc_tmp = 0.0
                     do k=1,sys%dimen
-                        r_dVdr_a = r_dVdr_a + (Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%dVdx(k,j)
-                        r_dVdr_b = r_dVdr_b + (Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%dVdx(k,j)
-                        r_dVdr_c = r_dVdr_c + (Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%dVdx(k,j)
-                        
-                        ! can be optimised
+                        !index as given because fortran is one indexed
+                        !dsq_a = pimc%act%t1inv*(Beads(3*i+1)%x(k,j)-Beads(3*i+2)%x(k,j))**2
+                        !dsq_b = pimc%act%t1inv*(Beads(3*i+2)%x(k,j)-Beads(3*i+3)%x(k,j))**2 
+                        !dsq_c = 0.5*pimc%act%t0inv*(Beads(3*i+3)%x(k,j)-Beads(3*i+4)%x(k,j))**2 
+                    
+                        !tdsq = tdsq + (dsq_a+dsq_b+dsq_c)
+                    
                         frc_a = pimc%act%a1*Beads(3*i+1)%dVdx(k,j)**2
-                        ke_frc_a = pimc%act%a1*(Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%ddx_Fsqr(k,j)
                         frc_b= (1.0-2.0*pimc%act%a1)*Beads(3*i+2)%dVdx(k,j)**2
-                        ke_frc_b = (1.0-2.0*pimc%act%a1)*(Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%ddx_Fsqr(k,j)
                         frc_c= pimc%act%a1*Beads(3*i+3)%dVdx(k,j)**2
-                        ke_frc_c = pimc%act%a1*(Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%ddx_Fsqr(k,j)
                         
                         ttemp_frc = ttemp_frc + (frc_a+frc_b+frc_c)
-                        ttemp_ke_frc = ttemp_frc + (ke_frc_a + ke_frc_b + ke_frc_c)
 
+                        ke_tmp = ke_tmp + pimc%act%t1inv*Beads(3*i+1)%dVdx(k,j) + pimc%act%t1inv* &
+                        Beads(3*i+2)%dVdx(k,j) + 0.5*pimc%act%t0inv*Beads(3*i+3)%dVdx(k,j)
+
+                        ke_frc1 = pimc%act%a1*(Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%ddx_Fsqr(k,j)
+                        ke_frc2 = (1.0-2.0*pimc%act%a1)*(Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%ddx_Fsqr(k,j)
+                        ke_frc3 = pimc%act%a1*(Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%ddx_Fsqr(k,j)
+
+                        ke_frc_tmp = ke_frc1 + ke_frc2 + ke_frc3
                     enddo
-                    r_dVdr = r_dVdr + pimc%act%v1*r_dVdr_a + pimc%act%v2*r_dVdr_b + pimc%act%v1*r_dVdr_c
+                    !dsq = dsq + tdsq*sys%mass(j)
                     temp_frc = temp_frc + ttemp_frc/sys%mass(j)
-                    temp_ke_frc = temp_ke_frc + ttemp_ke_frc/sys%mass(j)
+                    ke_frc = ke_frc + ke_frc_tmp/sys%mass(j)
                 enddo
 
-                ke = ke + r_dVdr
+                ke = ke + ke_frc
                 frc = frc + temp_frc
-                ke_frc = ke_frc + temp_ke_frc
                 pe_a=Beads(3*i+1)%VCurr*pimc%act%v1
                 pe_b=Beads(3*i+2)%VCurr*pimc%act%v2
                 pe_c=Beads(3*i+3)%VCurr*pimc%act%v1
@@ -618,14 +614,15 @@ module Estimator_class
 
             enddo
 
+            ke = ke*0.5*pimc%act%u0*pimc%Beta**2*(pimc%invNumBeads**3)
             pe = pe*pimc%invNumBeads
-            ke = ke*pimc%invNumBeads*0.5
+            ke_tmp = ke_tmp*pimc%NumBeads*0.5
             frc = frc*pimc%act%u0*pimc%Beta**2*(pimc%invNumBeads**3)
-            ke_frc = ke_frc*pimc%act%u0*(pimc%Beta**2)*(pimc%invNumBeads**3)
 
-            n2b = 1.5*dble(sys%dimen)*dble(sys%natom)**pimc%invBeta
+            !n2b = 3NDP/2beta for this case we have hardcoded 
+            n2b = 0.5*dble(sys%dimen)*dble(sys%natom)*pimc%invBeta
 
-            ke = n2b + ke + ke_frc
+            ke = n2b + ke + ke_tmp + frc
             pe = pe + 2.0*frc
             e = ke + pe 
  
