@@ -57,6 +57,7 @@
      real(kind=8), dimension(size(Weight),sys%nint,sys%dimen,sys%natom) :: SumUTr2drdx
      real(kind=8), dimension(size(Weight),sys%nbond,sys%dimen,sys%natom) :: Sumv2utdetadx
 
+     real(kind=8), dimension(sys%dimen,sys%natom,sys%nbond) :: drdx_tmp
      real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp1
      real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp2
      real(kind=8), dimension(size(Weight),sys%dimen,sys%dimen,sys%natom,sys%natom) :: d2Taydx2_tmp3
@@ -194,10 +195,12 @@
            enddo
         enddo
      enddo
+          !print *, d2Weightdx2_tmp1(:,:,1,1)
 
      !---------------------------------------------------
      ! Evaluate Sum_{j=1}^{Ndata} d2v_jdx2
      !---------------------------------------------------
+     Sumd2veightdx2 = 0.0
      do m=1,sys%dimen
         do l=1,sys%dimen
            do k=1,sys%natom
@@ -215,6 +218,8 @@
          !   enddo
          !enddo
          !call exit(0)
+         !print *, Sumd2veightdx2(:,:,1,1)
+         
      !-------------------------------------------------
      ! Evaluate dv_jdx*( Sum_j^Ndata v_j)^-1
      !-------------------------------------------------
@@ -280,6 +285,7 @@
             !enddo
             !print *, d2Weightdx2_tmp2(2,1,5,4)
             !call exit(0)
+
      !------------------------------------------------------------
      ! Evaluate (Sum_{j=1}^{Ndata} 2.0*Tay_j*Weight_j) Sumdveightdx  
      !------------------------------------------------------------
@@ -292,6 +298,7 @@
            enddo
         enddo
      enddo
+            !print *, d2Weightdx2_tmp3(:,:,1,1)
 
      !-----------------------------------------------------------
      ! Evaluate (Sum_{j=1}^{Ndata} Weight_j) * Sumd2veightdx2  
@@ -305,6 +312,8 @@
            enddo
         enddo
      enddo
+          !print *, d2Weightdx2_tmp4(:,:,1,1)
+          !print *, ''
 
      !----------------------------------------------------------
      ! Evaluate Sum_{j=1}^{Ndata} d2Weight_jdx2
@@ -320,24 +329,19 @@
         enddo
      enddo
           !print *, d2Weightdx2(:,:,1,1)
+          !print *, ''
           !call exit(0)
 
      !----------------------------------------------------------
      ! Evaluate Sum_{j=1}^{Ndata} dWeight_jdx * dTay_jdx
      !----------------------------------------------------------
      DWeightdx = 0.0
+     DTaydx = 0.0
      do k=1,neigh%numInner
         do j=1,sys%dimen
            do i=1,sys%nbond
               DWeightdx(k,j,sys%mb(i)) = DWeightdx(k,j,sys%mb(i)) + DWeight(i,k)*drdx(j,sys%mb(i),i)
               DWeightdx(k,j,sys%nb(i)) = DWeightdx(k,j,sys%nb(i)) + DWeight(i,k)*drdx(j,sys%nb(i),i)
-           enddo
-        enddo
-     enddo
-     DTaydx = 0.0
-     do k=1,neigh%numInner
-        do j=1,sys%dimen
-           do i=1,sys%nbond
               DTaydx(k,j,sys%mb(i)) = DTaydx(k,j,sys%mb(i)) + DTaydR(k,i)*drdx(j,sys%mb(i),i)
               DTaydx(k,j,sys%nb(i)) = DTaydx(k,j,sys%nb(i)) + DTaydR(k,i)*drdx(j,sys%nb(i),i)
            enddo
@@ -360,8 +364,8 @@
            enddo
         enddo
      enddo
-            !print *, SumdWeightdxdTaydx(:,:,1,2)
-            !print *, SumdTaydxdWeightdx(:,:,1,2)
+            !print *, SumdWeightdxdTaydx(:,:,1,1)
+            !print *, SumdTaydxdWeightdx(:,:,1,1)
             !call exit(0)
      
      !=========================================================
@@ -420,7 +424,6 @@
            enddo
         enddo
      enddo
-
            !do j=1,sys%dimen
            !   do i=1,sys%dimen
            !      print *, d2Taydx2_tmp1(1,j,i,2,1), d2Taydx2_tmp1(1,j,i,1,2)
@@ -448,7 +451,7 @@
      enddo
          !do j=1,sys%dimen
          !   do i=1,sys%dimen
-         !      print *, d2Taydx2_tmp2(1,j,i,2,1)
+         !      print *, d2Taydx2_tmp1(1,j,i,1,1), d2Taydx2_tmp2(1,j,i,1,1)
          !   enddo
          !enddo
          !call exit(0)
@@ -474,6 +477,11 @@
 
           !do j=1,sys%dimen
           !   do i=1,sys%dimen
+          !      print *, d2Taydx2_tmp1(1,j,i,1,1), d2Taydx2_tmp2(1,j,i,1,1), d2Taydx2_tmp3(1,j,i,1,1)
+          !   enddo
+          !enddo
+          !do j=1,sys%dimen
+          !   do i=1,sys%dimen
           !      print *, d2Taydx2_tmp3(1,j,i,1,2)
           !   enddo
           !enddo
@@ -496,7 +504,7 @@
            enddo
         enddo
      enddo
-            !print *, Weightd2Taydx2(:,:,2,2)
+            !print *, Weightd2Taydx2(:,:,1,1)
             !call exit(0)
 
      !-------------------------------------------
@@ -507,15 +515,17 @@
            do j=1,sys%natom
               do i=1,sys%natom
                  d2Vdx2(l,k,j,i) = Weightd2Taydx2(l,k,j,i) + SumdWeightdxdTaydx(l,k,j,i) & 
+                 !d2Vdx2(l,k,j,i) = SumdWeightdxdTaydx(l,k,j,i) & 
                     + SumdTaydxdWeightdx(l,k,j,i) + d2Weightdx2(l,k,j,i)
               enddo
            enddo
         enddo
      enddo
 
-             !print *, d2Vdx2(:,:,1,5)
-             !print *, d2Vdx2(:,:,5,1)
-             !call exit(0)
+            !print *, d2Vdx2(:,:,1,1)
+            !print *, d2Vdx2(:,:,5,1)
+            !print *, ''
+            !call exit(0)
 
      return
   end subroutine

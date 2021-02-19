@@ -541,7 +541,7 @@ module Estimator_class
             
             real(kind=8) :: e, ke, pe, frc, dsq, tdsq, ttemp_frc, temp_frc
             real(kind=8) :: dsq_a, dsq_b, dsq_c, frc_a, frc_b, frc_c, pe_a, pe_b, pe_c
-            real(kind=8) :: n2b
+            real(kind=8) :: n2b, ke_tmp1, ke_tmp2, ke_tmp3
             real(kind=8) :: ke_tmp,ke_frc1,ke_frc2,ke_frc3,ke_frc_tmp,ke_frc
 
             integer :: i,j,k
@@ -591,14 +591,16 @@ module Estimator_class
                         
                         ttemp_frc = ttemp_frc + (frc_a+frc_b+frc_c)
 
-                        ke_tmp = ke_tmp + pimc%act%t1inv*Beads(3*i+1)%dVdx(k,j) + pimc%act%t1inv* &
-                        Beads(3*i+2)%dVdx(k,j) + 0.5*pimc%act%t0inv*Beads(3*i+3)%dVdx(k,j)
+                        ke_tmp1 = pimc%act%v1*(Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%dVdx(k,j)
+                        ke_tmp2 = pimc%act%v2*(Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%dVdx(k,j)
+                        ke_tmp3 = pimc%act%v1*(Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%dVdx(k,j)
 
                         ke_frc1 = pimc%act%a1*(Beads(3*i+1)%x(k,j)-cv(k,j))*Beads(3*i+1)%ddx_Fsqr(k,j)
                         ke_frc2 = (1.0-2.0*pimc%act%a1)*(Beads(3*i+2)%x(k,j)-cv(k,j))*Beads(3*i+2)%ddx_Fsqr(k,j)
                         ke_frc3 = pimc%act%a1*(Beads(3*i+3)%x(k,j)-cv(k,j))*Beads(3*i+3)%ddx_Fsqr(k,j)
 
                         ke_frc_tmp = ke_frc1 + ke_frc2 + ke_frc3
+                        ke_tmp = ke_tmp + ke_tmp1 + ke_tmp2 + ke_tmp3
                     enddo
                     !dsq = dsq + tdsq*sys%mass(j)
                     temp_frc = temp_frc + ttemp_frc/sys%mass(j)
@@ -616,7 +618,7 @@ module Estimator_class
 
             ke = ke*0.5*pimc%act%u0*pimc%Beta**2*(pimc%invNumBeads**3)
             pe = pe*pimc%invNumBeads
-            ke_tmp = ke_tmp*pimc%NumBeads*0.5
+            ke_tmp = ke_tmp*pimc%invNumBeads*0.5
             frc = frc*pimc%act%u0*pimc%Beta**2*(pimc%invNumBeads**3)
 
             !n2b = 3NDP/2beta for this case we have hardcoded 
