@@ -778,93 +778,86 @@ module Estimator_class
             real(kind=8) :: e, ke, pe, frc, dsq, tdsq, f2, tempf2
             real(kind=8) :: e_sc, ke_sc, pe_sc, frc_sc
             real(kind=8) :: temp_sc_frc, tempf2_odd, tempf2_even
-            real(kind=8) :: tmp_frc, r_dvdr_even, r_dvdr_odd, r_dvdr
-            real(kind=8) :: pe_odd, pe_even, frc2_sc, temp_sc_frc2
-            real(kind=8) :: n2b, tempf2_odd2, tempf2_even2, tmp_frc2
-            
+            real(kind=8) :: tmp_frc
+            real(kind=8) :: pe_odd, pe_even
+            real(kind=8) :: n2b
+            real(kind=8) :: tdsq_odd, tdsq_even, ke_frc_odd, ke_frc_even
+            real(kind=8) :: ke_frc_tmp, ke_frc_ttmp, ke_frc
             
             integer :: i,j,k
             
-            ke = 0.0
             ke_sc = 0.0
-            pe = 0.0
             pe_sc = 0.0
-            frc = 0.0
             frc_sc =0.0
-            frc2_sc = 0.0
 
-            n2b=0.5*dble(sys%dimen)*dble(sys%natom)*pimc%invBeta
-
-            ! compute the centroid
+             ! compute the centroid
             do i=1,sys%natom
                 do j=1,sys%dimen
                     cv(j,i)=0.0
-                    do k=1,pimc%NumBeads
+                    do k=1,pimc%NumBeadsEff
                         cv(j,i)=cv(j,i)+Beads(k)%x(j,i)
                     enddo
-                    cv(j,i)=cv(j,i)*pimc%invNumBeads
+                    cv(j,i)=cv(j,i)/pimc%NumBeadsEff
                 enddo
             enddo
 
-            
-! kinetic energy first this is identical the takahashi-imada ke 
-
+            ke_frc = 0.0
             do i=1,pimc%NumBeads,2
-                r_dvdr = 0.0
+                dsq = 0.0
+                ke_frc_tmp = 0.0
                 do j=1,sys%natom
-                    r_dvdr_even=0.0
-                    r_dvdr_odd=0.0
+                    tdsq = 0.0
+                    ke_frc_ttmp = 0.0
                     do k=1,sys%dimen
-                        r_dvdr_even = r_dvdr_even + (Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%dVdx(k,j)
-                        r_dvdr_odd = r_dvdr_odd + (Beads(i)%x(k,j)-cv(k,j))*Beads(i)%dVdx(k,j)
+                        tdsq_odd = (Beads(i)%x(k,j)-cv(k,j))*Beads(i)%dVdx(k,j)
+                        tdsq_even = (Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%dVdx(k,j)
+
+                        tdsq = tdsq + (2.0/3.0)*tdsq_odd + (4.0/3.0)*tdsq_even
+
+                        ke_frc_odd = (Beads(i)%x(k,j)-cv(k,j))*Beads(i)%ddx_Fsqr(k,j)
+                        ke_frc_even = (Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%ddx_Fsqr(k,j)
+                        ke_frc_ttmp = ke_frc_ttmp + pimc%act%alpha*ke_frc_odd + (1.0-pimc%act%alpha)*ke_frc_even
                     enddo
-                    r_dvdr = r_dvdr + (2.0/3.0)*r_dvdr_even + (4.0/3.0)*r_dvdr_odd
+                    dsq = dsq + tdsq
+                    ke_frc_tmp = ke_frc_tmp + ke_frc_ttmp/sys%mass(j)
                 enddo
-                ke_sc = ke_sc + r_dvdr
-
+                ke_sc = ke_sc + dsq
+                ke_frc = ke_frc + ke_frc_tmp
             enddo
-
-            ke_sc = ke_sc*pimc%invNumBeads*0.5
-
-
-! potential energy and the forces for the suzuki-chin action
+            ke_sc = ke_sc*0.5*pimc%invNumBeads
+            ke_frc = ke_frc*pimc%invNumBeads**3*pimc%Beta**2/18.0
 
             do i=1,pimc%NumBeads,2
                 temp_sc_frc = 0.0
-                temp_sc_frc2 = 0.0
                 pe_odd = 0.0
                 pe_even = 0.0
                 do j=1,sys%natom
                     tempf2_odd = 0.0
-                    tempf2_odd2 = 0.0
                     tempf2_even = 0.0
-                    tempf2_even2 = 0.0
                     tmp_frc = 0.0
-                    tmp_frc2 = 0.0
                     do k=1,sys%dimen
                         tempf2_odd = pimc%act%alpha*Beads(i)%dVdx(k,j)**2
-                        tempf2_odd2 = pimc%act%alpha*(Beads(i)%x(k,j)-cv(k,j))*Beads(i)%ddx_Fsqr(k,j)
                         tempf2_even= (1.0-pimc%act%alpha)*Beads(i+1)%dVdx(k,j)**2
-                        tempf2_even2 = (1.0-pimc%act%alpha)*(Beads(i+1)%x(k,j)-cv(k,j))*Beads(i+1)%ddx_Fsqr(k,j)
                         tmp_frc = tmp_frc + tempf2_odd + tempf2_even
-                        tmp_frc2 = tmp_frc2 + (tempf2_odd2+tempf2_even2)
                     enddo
                     temp_sc_frc = temp_sc_frc + tmp_frc/sys%mass(j)
-                    temp_sc_frc2 = temp_sc_frc2 + tmp_frc2/sys%mass(j)
                 enddo
+
                 pe_odd = 2.0/3.0*Beads(i)%Vcurr
                 pe_even = 4.0/3.0*Beads(i+1)%Vcurr
                 pe_sc = pe_sc + pe_odd + pe_even
+
                 frc_sc = frc_sc + temp_sc_frc
-                frc2_sc = frc2_sc + temp_sc_frc2
+
             enddo
 
             frc_sc = frc_sc*pimc%Beta**2*(pimc%invNumBeads**3)/(9.0)
-            frc2_sc = 0.5*(frc2_sc*pimc%Beta**2*pimc%invNumBeads**3)/9.0
+
+            n2b=0.5*dble(sys%dimen)*dble(sys%natom)*pimc%invBeta
 
             pe_sc = pe_sc*pimc%invNumBeads
             pe_sc=pe_sc+2.0*frc_sc
-            ke_sc=n2b+ke_sc+frc2_sc+frc_sc
+            ke_sc=n2b+ke_sc+frc_sc+ke_frc
 
             e_sc=ke_sc+pe_sc
             
