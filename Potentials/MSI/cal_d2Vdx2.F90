@@ -84,7 +84,9 @@
            D2veightdr_tmp4(i,k) = temp*(r(i)-pot(neigh%inner(k))%r(i))*r(i)**2
         enddo
      enddo
+
      dveightdx_tmp1 = 0.0
+     zdzdx_tmp1 = 0.0
      do k=1,neigh%numInner
         do j=1,sys%dimen
            do i=1,sys%nbond
@@ -92,21 +94,6 @@
                    D2veightdr_tmp1(i,k)*drdx(j,sys%mb(i),i)
               dveightdx_tmp1(k,j,sys%nb(i)) = dveightdx_tmp1(k,j,sys%nb(i)) + &
                    D2veightdr_tmp1(i,k)*drdx(j,sys%nb(i),i)
-           enddo
-        enddo
-     enddo
-        !print *, D2veightdr_tmp1(:,1)
-        !print *, ''
-        !print *, D2veightdr_tmp2(:,1)
-        !print *, ''
-        !print *, D2veightdr_tmp3(:,1)
-        !print *, ''
-        !print *, D2veightdr_tmp4(:,1)
-
-     zdzdx_tmp1 = 0.0
-     do k=1,neigh%numInner
-        do j=1,sys%dimen
-           do i=1,sys%nbond
               zdzdx_tmp1(k,j,sys%mb(i)) = zdzdx_tmp1(k,j,sys%mb(i)) + &
                    (r(i)-pot(neigh%inner(k))%r(i))*drdx(j,sys%mb(i),i)*r(i)**2
               zdzdx_tmp1(k,j,sys%nb(i)) = zdzdx_tmp1(k,j,sys%nb(i)) + &
@@ -115,22 +102,34 @@
         enddo
      enddo
 
-     do k=1,neigh%numInner
-        do m=1,sys%dimen
-           do l=1,sys%dimen
-              do j=1,sys%natom
-                 do i=1,sys%natom
-                    d2veightdx2_tmp1(k,m,l,j,i) = zdzdx_tmp1(k,l,i)*dveightdx_tmp1(k,m,j)
-                 enddo
-              enddo
-           enddo
-        enddo
-     enddo
+!     zdzdx_tmp1 = 0.0
+!     do k=1,neigh%numInner
+!        do j=1,sys%dimen
+!           do i=1,sys%nbond
+!              zdzdx_tmp1(k,j,sys%mb(i)) = zdzdx_tmp1(k,j,sys%mb(i)) + &
+!                   (r(i)-pot(neigh%inner(k))%r(i))*drdx(j,sys%mb(i),i)*r(i)**2
+!              zdzdx_tmp1(k,j,sys%nb(i)) = zdzdx_tmp1(k,j,sys%nb(i)) + &
+!                   (r(i)-pot(neigh%inner(k))%r(i))*drdx(j,sys%nb(i),i)*r(i)**2
+!           enddo
+!        enddo
+!     enddo
+
+!     do k=1,neigh%numInner
+!        do m=1,sys%dimen
+!           do l=1,sys%dimen
+!              do j=1,sys%natom
+!                 do i=1,sys%natom
+!                    d2veightdx2_tmp1(k,m,l,j,i) = zdzdx_tmp1(k,l,i)*dveightdx_tmp1(k,m,j)
+!                 enddo
+!              enddo
+!           enddo
+!        enddo
+!     enddo
          !do m=1,sys%dimen
          !   do l=1,sys%dimen
-         !      print *, zdzdx_tmp1(1,m,1)*dveightdx_tmp1(1,l,5)
-         !      print *, dveightdx2_tmp1(1,m,l,1,5)
-         !      print *, ''
+         !      !print *, zdzdx_tmp1(1,m,1)*dveightdx_tmp1(1,l,5)
+         !      print *, d2veightdx2_tmp1(1,m,l,1,1)
+         !      !print *, ''
          !   enddo
          !enddo
          !call exit(0)
@@ -142,24 +141,22 @@
            do n=1,sys%dimen
               do l=1,sys%natom
                  do j=1,sys%natom
+                    d2veightdx2_tmp1(k,m,n,l,j) = zdzdx_tmp1(k,n,j)*dveightdx_tmp1(k,m,l)
                     do i=1,sys%nbond
                        d2veightdx2_tmp2(k,m,n,l,j) = d2veightdx2_tmp2(k,m,n,l,j) + &
                            dr2dxdx(m,n,l,j,i)*(D2veightdr_tmp2(i,k)+D2veightdr_tmp3(i,k))
                        d2veightdx2_tmp3(k,m,n,l,j) = d2veightdx2_tmp3(k,m,n,l,j) + &
                            d2rdx2(m,n,l,j,i)*D2veightdr_tmp4(i,k)
                     enddo
+                    ! For single threading this is slower somehow
+                    !d2veightdx2(k,m,n,l,j) = d2veightdx2_tmp1(k,m,n,l,j) + &
+                    !     d2veightdx2_tmp2(k,m,n,l,j) + d2veightdx2_tmp3(k,m,n,l,j)
                  enddo
               enddo
            enddo
         enddo
      enddo
-          !do j=1,sys%dimen
-          !   do i=1,sys%dimen
-          !      print *, d2veightdx2_tmp2(1,j,i,1,1)
-          !      print *, d2veightdx2_tmp3(1,j,i,1,1)
-          !   enddo
-          !enddo
-          !call exit(0)
+
      do k=1,neigh%numInner
         do m=1,sys%dimen
            do l=1,sys%dimen
@@ -174,7 +171,7 @@
      enddo
          !do j=1,sys%dimen
          !   do i=1,sys%dimen
-         !      print *, d2veightdx2(1,j,i,1,1)
+         !      print *, d2veightdx2(1,j,i,4,3)
          !   enddo
          !enddo
          !call exit(0)
@@ -264,6 +261,10 @@
 
      !--------------------------------------------------------------
      ! Evaluate SumTaydveightdx * Sumdveightdx 
+     !                         &
+     ! Evaluate (Sum_{j=1}^{Ndata} 2.0*Tay_j*Weight_j) Sumdveightdx  
+     !                         &
+     ! Evaluate (Sum_{j=1}^{Ndata} Weight_j) * Sumd2veightdx2  
      !--------------------------------------------------------------
      do l=1,sys%dimen
         do k=1,sys%dimen
@@ -271,6 +272,8 @@
               do i=1,sys%natom
                  d2Weightdx2_tmp2(l,k,j,i) = SumTaydveightdx(l,j)*Sumdveightdx(k,i) &
                     + SumTaydveightdx(k,i)*Sumdveightdx(l,j)
+                 d2Weightdx2_tmp3(l,k,j,i) = 2.0*V*Sumdveightdx(l,j)*Sumdveightdx(k,i)
+                 d2Weightdx2_tmp4(l,k,j,i) = -V*Sumd2veightdx2(l,k,j,i)
               enddo
            enddo
         enddo
@@ -289,29 +292,29 @@
      !------------------------------------------------------------
      ! Evaluate (Sum_{j=1}^{Ndata} 2.0*Tay_j*Weight_j) Sumdveightdx  
      !------------------------------------------------------------
-     do l=1,sys%dimen
-        do k=1,sys%dimen
-           do j=1,sys%natom
-              do i=1,sys%natom
-                 d2Weightdx2_tmp3(l,k,j,i) = 2.0*V*Sumdveightdx(l,j)*Sumdveightdx(k,i)
-              enddo
-           enddo
-        enddo
-     enddo
+!     do l=1,sys%dimen
+!        do k=1,sys%dimen
+!           do j=1,sys%natom
+!              do i=1,sys%natom
+!                 d2Weightdx2_tmp3(l,k,j,i) = 2.0*V*Sumdveightdx(l,j)*Sumdveightdx(k,i)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
             !print *, d2Weightdx2_tmp3(:,:,1,1)
 
      !-----------------------------------------------------------
      ! Evaluate (Sum_{j=1}^{Ndata} Weight_j) * Sumd2veightdx2  
      !-----------------------------------------------------------
-     do l=1,sys%dimen
-        do k=1,sys%dimen
-           do j=1,sys%natom
-              do i=1,sys%natom
-                 d2Weightdx2_tmp4(l,k,j,i) = -V*Sumd2veightdx2(l,k,j,i)
-              enddo
-           enddo
-        enddo
-     enddo
+!     do l=1,sys%dimen
+!        do k=1,sys%dimen
+!           do j=1,sys%natom
+!              do i=1,sys%natom
+!                 d2Weightdx2_tmp4(l,k,j,i) = -V*Sumd2veightdx2(l,k,j,i)
+!              enddo
+!           enddo
+!        enddo
+!     enddo
           !print *, d2Weightdx2_tmp4(:,:,1,1)
           !print *, ''
 
@@ -433,8 +436,11 @@
 
      !--------------------------------------------------
      ! Second term of d2Taydx2
+     !          &
+     ! Third term of d2Taydx2
      !--------------------------------------------------
      d2Taydx2_tmp2 = 0.0
+     d2Taydx2_tmp3 = 0.0
      do k=1,neigh%numInner
         do m=1,sys%dimen
            do n=1,sys%dimen
@@ -443,6 +449,8 @@
                     do i=1,sys%nbond
                        d2Taydx2_tmp2(k,m,n,l,j) = d2Taydx2_tmp2(k,m,n,l,j) &
                           - 2.0*dr2dxdx(m,n,l,j,i)*dTaydR(k,i)*r(i)
+                       d2Taydx2_tmp3(k,m,n,l,j) = d2Taydx2_tmp3(k,m,n,l,j) &
+                          + d2rdx2(m,n,l,j,i)*dTaydR(k,i)
                     enddo
                  enddo
               enddo
@@ -459,21 +467,21 @@
      !-------------------------------------------------
      ! Third term of d2Taydx2
      !-------------------------------------------------
-     d2Taydx2_tmp3 = 0.0
-     do k=1,neigh%numInner
-        do m=1,sys%dimen
-           do n=1,sys%dimen
-              do l=1,sys%natom
-                 do j=1,sys%natom
-                    do i=1,sys%nbond
-                       d2Taydx2_tmp3(k,m,n,l,j) = d2Taydx2_tmp3(k,m,n,l,j) &
-                          + d2rdx2(m,n,l,j,i)*dTaydR(k,i)
-                    enddo
-                 enddo
-              enddo
-           enddo
-        enddo
-     enddo
+!     d2Taydx2_tmp3 = 0.0
+!     do k=1,neigh%numInner
+!        do m=1,sys%dimen
+!           do n=1,sys%dimen
+!              do l=1,sys%natom
+!                 do j=1,sys%natom
+!                    do i=1,sys%nbond
+!                       d2Taydx2_tmp3(k,m,n,l,j) = d2Taydx2_tmp3(k,m,n,l,j) &
+!                          + d2rdx2(m,n,l,j,i)*dTaydR(k,i)
+!                    enddo
+!                 enddo
+!              enddo
+!           enddo
+!        enddo
+!     enddo
 
           !do j=1,sys%dimen
           !   do i=1,sys%dimen
