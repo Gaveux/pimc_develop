@@ -123,6 +123,7 @@ subroutine read_pimc(sys,pimc,in_file)
     read(7,8) pimc%Restart
     write(11,8) pimc%Restart
 8   format(a1)
+print *, pimc%Restart
     
     ! Whether or not wirting checkpoint
     read(7,80) icomm

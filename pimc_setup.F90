@@ -70,6 +70,18 @@ subroutine pimc_setup(seedval,sys,pimc,Beads,OldBeads)
             enddo
         enddo
  
+    else if (pimc%Restart == 's') then
+        ! not restarting so generate as random displacements from equil
+        do i=1,pimc%NumBeadsEff
+            do j=1,sys%natom
+                do k=1,sys%dimen
+                    !rand=genrand_real(seedval%seedvalue)*2.0 - 1.0
+                    !rand=genrand_real3()*2.0 - 1.0
+                    Beads(i)%x(k,j) = sys%EquilibriumGeom(k,j) + pimc%IniDisp
+                enddo
+            enddo
+        enddo
+
     else if (pimc%Restart == 'y') then
         
         ! flag the error if the file does not already exist

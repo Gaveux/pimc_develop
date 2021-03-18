@@ -57,6 +57,9 @@ subroutine read_iseed(seedval,pimc,IN_ISEED)
           call exit(1)
        endif
 
+    else if (pimc%Restart == 's') then
+        
+
     else
        print *, 'Error: no restart command detected!'
        call exit(1)
