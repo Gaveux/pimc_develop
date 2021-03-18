@@ -77,7 +77,7 @@ subroutine pimc_setup(seedval,sys,pimc,Beads,OldBeads)
                 do k=1,sys%dimen
                     !rand=genrand_real(seedval%seedvalue)*2.0 - 1.0
                     !rand=genrand_real3()*2.0 - 1.0
-                    Beads(i)%x(k,j) = sys%EquilibriumGeom(k,j) + pimc%IniDisp
+                    Beads(i)%x(k,j) = sys%EquilibriumGeom(k,j)
                 enddo
             enddo
         enddo

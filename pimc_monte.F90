@@ -231,15 +231,15 @@ module path_integral_monte_carlo
             B_init = pimc%Beta
             do iter=1,pimc%StepsPerBlock
            
-                do iatom=1,atom_pass
-                    do imove=1,num_moves
-                        atom_move=.false.
-                        if(imove.eq.num_moves) then
-                            atom_move=.true.
-                        endif
-                        do ibead=1,pimc%NumBeadsEff+1
-                            call copy(Beads(ibead),OldBeads(ibead))
-                        enddo
+                !do iatom=1,atom_pass
+                    !do imove=1,num_moves
+                    !    atom_move=.false.
+                    !    if(imove.eq.num_moves) then
+                    !        atom_move=.true.
+                    !    endif
+                    !    do ibead=1,pimc%NumBeadsEff+1
+                    !        call copy(Beads(ibead),OldBeads(ibead))
+                    !    enddo
                         act%act_old = act%act
 #ifdef FREE_ENERGY
                         !scale the coordinates for thermodynamic integration between the classical andquantum result
@@ -247,16 +247,18 @@ module path_integral_monte_carlo
                             call scaleCoords(free,Beads,pimc,sys)
                         endif
 #endif                  
-                        call trial_move(seedval,sys,pimc,Beads,atom_move,first_moved,last_moved)
+                        !print *, Beads(1)%x
+                        !call trial_move(seedval,sys,pimc,Beads,atom_move,first_moved,last_moved)
 #ifdef FREE_ENERGY
                         !If using classical to quantum scaling all the beads have to be updated
-                        if (pimc%free%free_type == 0.and. pimc%doFree==1) then
-                            first_moved=1
-                            last_moved = pimc%NumBeadsEff
-                        endif
+                        !if (pimc%free%free_type == 0.and. pimc%doFree==1) then
+                        !    first_moved=1
+                        !    last_moved = pimc%NumBeadsEff
+                        !endif
 #endif
-                        do i=first_moved,last_moved 
-                            ind = mod(i-1,pimc%NumBeadsEff)+1
+                        !do i=first_moved,last_moved 
+                        !    ind = mod(i-1,pimc%NumBeadsEff)+1
+                            ind = 1
 #if POT == 0
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,Beads(ind)%ddx_Fsqr)
@@ -264,7 +266,7 @@ module path_integral_monte_carlo
                             !Analytic potential energy surfaces
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
 #endif
-                        enddo
+                        !enddo
 #ifdef FREE_ENERGY
                         !Unscale the coordinates so the rest proceeds as normal
                         if (pimc%free%free_type == 0.and. pimc%doFree==1) then
@@ -272,42 +274,42 @@ module path_integral_monte_carlo
                         endif
 #endif
                 
-                        call copy (Beads(1),Beads(pimc%NumBeadsEff+1))
+                        !call copy (Beads(1),Beads(pimc%NumBeadsEff+1))
 
                         ! calculate the path integral action
-                        call eval_action(sys,pimc,Beads,act)
+                        !call eval_action(sys,pimc,Beads,act)
 
                         ! now the actual Monte Carlo step!
 #ifdef FREE_ENERGY
-                        if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                            deltae = pimc%Beta*act%act - pimc%OldBeta*act%act_old
-                        else
-                            deltae = pimc%Beta*(act%act - act%act_old)
-                        endif
+                        !if(pimc%free%free_type==2.and. pimc%doFree==1) then
+                        !    deltae = pimc%Beta*act%act - pimc%OldBeta*act%act_old
+                        !else
+                        !    deltae = pimc%Beta*(act%act - act%act_old)
+                        !endif
 #else
-                        deltae = pimc%Beta*(act%act - act%act_old)
+                        !deltae = pimc%Beta*(act%act - act%act_old)
 #endif
-                        !rand = genrand_real3()
-                        rand = genrand_real(seedval%seedvalue)
+                        !!rand = genrand_real3()
+                        !rand = genrand_real(seedval%seedvalue)
 
-                        if (deltae.lt.0.0) then
-                            if(atom_move) then
-                                accept = accept + 1.0
-                            else
-                                moveacc = moveacc + 1.0 
-                            endif
-                        else if ((deltae.gt.0.0).and.(exp(-deltae).lt.rand)) then
-                            do ibead=1,pimc%NumBeadsEff+1
-                                call copy(OldBeads(ibead),Beads(ibead))
-                            enddo
-                            act%act = act%act_old
-                        else
-                            if(atom_move) then
-                                accept = accept + 1.0
-                            else
-                                moveacc = moveacc + 1.0 
-                            endif
-                        endif
+                        !if (deltae.lt.0.0) then
+                        !    if(atom_move) then
+                        !        accept = accept + 1.0
+                        !    else
+                        !        moveacc = moveacc + 1.0 
+                        !    endif
+                        !else if ((deltae.gt.0.0).and.(exp(-deltae).lt.rand)) then
+                        !    do ibead=1,pimc%NumBeadsEff+1
+                        !        call copy(OldBeads(ibead),Beads(ibead))
+                        !    enddo
+                        !    act%act = act%act_old
+                        !else
+                        !    if(atom_move) then
+                        !        accept = accept + 1.0
+                        !    else
+                        !        moveacc = moveacc + 1.0 
+                        !    endif
+                        !endif
 
                         ! do some calculating of energy estimators and binning
                         if(equil) then
@@ -334,8 +336,8 @@ module path_integral_monte_carlo
                             
 #endif
                         endif
-                    enddo
-                enddo
+                    !enddo
+                !enddo
 #ifdef FREE_ENERGY
                 if(equil) then
                 else
@@ -351,25 +353,25 @@ module path_integral_monte_carlo
             !End of the step
 
             !Process the results at the end of the block
-            accept = accept / (pimc%StepsPerBlock*atom_pass)
-            acctot = acctot + accept
+            !accept = accept / (pimc%StepsPerBlock*atom_pass)
+            !acctot = acctot + accept
      
-            if(pimc%move%move_type.eq.1) then
-                moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
-                moveacctot = moveacctot + moveacc
-            endif
-            !write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
+            !if(pimc%move%move_type.eq.1) then
+            !    moveacc = moveacc / (pimc%StepsPerBlock*(num_moves-1)*sys%natom)
+            !    moveacctot = moveacctot + moveacc
+            !endif
+            !!write(*,*) 'Block: ', iblock, 'Acceptance Ratio: ', accept
          
-            if(pimc%move%move_type.eq.1) then
-               ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
-            endif
+            !if(pimc%move%move_type.eq.1) then
+            !   ! write(*,*) 'Block: ', iblock, 'Staging Acceptance Ratio: ', moveacc
+            !endif
 
-            if(pimc%Sample==1) then
-                !at the end of each block write some geometries to tout
-                do i=1,pimc%NumBeadsEff
-                    call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
-                enddo
-            endif
+            !if(pimc%Sample==1) then
+            !    !at the end of each block write some geometries to tout
+            !    do i=1,pimc%NumBeadsEff
+            !        call writeTOUT(Beads(i)%x,Beads(i)%VCurr, out_dir,.False.,sys%natom,sys%dimen)
+            !    enddo
+            !endif
             
             if(equil) then 
                ! do nothing 
@@ -413,7 +415,7 @@ module path_integral_monte_carlo
 #ifdef FREE_ENERGY
         if(pimc%doSample==1) then
 #endif
-        call writeHistogram(bins,params,out_dir) 
+        !call writeHistogram(bins,params,out_dir) 
 #ifdef FREE_ENERGY
         endif
 #endif
