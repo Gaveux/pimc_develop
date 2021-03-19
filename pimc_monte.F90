@@ -258,8 +258,10 @@ module path_integral_monte_carlo
 #endif
                         !do i=first_moved,last_moved 
                         !    ind = mod(i-1,pimc%NumBeadsEff)+1
-                            ind = 1
+                        do ind = 1, pimc%NumBeadsEff
 #if POT == 0
+                            !print *, Beads(ind)%x
+                            !print *, ''
                             !MSI potential energy surfaces
                             call potential(ind,pot,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx,Beads(ind)%ddx_Fsqr)
 #else
@@ -267,6 +269,7 @@ module path_integral_monte_carlo
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
 #endif
                         !enddo
+                        enddo
 #ifdef FREE_ENERGY
                         !Unscale the coordinates so the rest proceeds as normal
                         if (pimc%free%free_type == 0.and. pimc%doFree==1) then
