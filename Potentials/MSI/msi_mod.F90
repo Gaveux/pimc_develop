@@ -90,12 +90,13 @@
         !Initialise variables used in the modified shepard interpolation 
         !requires the molsysdat object to be initialised before hand and passed
         !to this initialisation subroutine
-        subroutine MSI_INIT(this, sys, interp_file, pot_file, atom_perm_file, num_copies)
+        subroutine MSI_INIT(this, sys, interp_file, pot_file, atom_perm_file, num_copies,outdir)
             type (msi_params), intent(out) :: this
             type(molsysdat), intent(in) ::sys
             character(len=80), intent(in) :: interp_file
             character(len=80), intent(in) :: pot_file
             character(len=80), intent(in) :: atom_perm_file
+            character(len=80), intent(in) :: outdir
             integer, intent(in) :: num_copies
             integer :: ierr,i
 
@@ -105,7 +106,7 @@
             this%sys = sys
             call read_interp(this%interp,interp_file)
             call bondperm(this%interp,this%sys,atom_perm_file)
-            call read_pot(this%sys,this%interp,this%pot,pot_file)
+            call read_pot(this%sys,this%interp,this%pot,pot_file,outdir)
             
             allocate(this%neighlist(num_copies),stat=ierr)
             if(ierr.ne.0) stop 'Error allocating the neighbour list array in MSI_INIT'

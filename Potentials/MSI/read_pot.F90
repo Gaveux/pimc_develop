@@ -1,5 +1,5 @@
 
-      subroutine read_pot(sys,interp,allpot,filename)
+      subroutine read_pot(sys,interp,allpot,filename,outdir)
 
       use molecule_specs
       use interpolation
@@ -10,6 +10,7 @@
       type (pot_data_point), dimension(:), pointer :: pot
       type (pot_data_point), dimension(:), pointer :: allpot
       character(len=80), intent(in) :: filename
+      character(len=80), intent(in) :: outdir
 
       integer  :: ierr,i,j,k,counter,n, reject
       real(kind=8) :: vmin_pot
@@ -84,11 +85,11 @@
       
       close(unit=3)
 
-      open(unit=159,file='/home/gaveux/pimc/input/pot_asymmod1.dat',action='write')
-      open(unit=169,file='/home/gaveux/pimc/input/pot_asymmod2.dat',action='write')
-      open(unit=179,file='/home/gaveux/pimc/input/pot_asymmod3.dat',action='write')
-      open(unit=189,file='/home/gaveux/pimc/input/pot_asymmod4.dat',action='write')
-      open(unit=149,file='/home/gaveux/pimc/input/pot_symmod.dat',action='write')
+      open(unit=159,file=adjustl(trim(outdir))//"pot_asymmod1.dat",action='write')
+      open(unit=169,file=adjustl(trim(outdir))//"pot_asymmod2.dat",action='write')
+      open(unit=179,file=adjustl(trim(outdir))//"pot_asymmod3.dat",action='write')
+      open(unit=189,file=adjustl(trim(outdir))//"pot_asymmod4.dat",action='write')
+      open(unit=149,file=adjustl(trim(outdir))//"pot_symmod.dat",action='write')
       do j=1,interp%ndata
          !write(179,*) (pot(j)%r(i),i=1,4)
          call normod(pot(j)%r,sys%nbond)

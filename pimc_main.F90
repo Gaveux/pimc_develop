@@ -52,13 +52,13 @@ program pimc90
     !quit execution and print an error message
 
 #if POT == 0
-    if(iargs.ne.12) then
-        write(*,*) 'Error: incorrect number of command line arguments'
-        write(*,*) iargs
-        write(*,*) 'Correct Usage:'
-        write(*,*) '    pimc90 pimc.in system.in iseed.in binning.in interp.in pot.in atomperms.in output_dir checkpoint_dir checkpoint_output_filename checkpoint_input_filename blocking_filename'
-        stop
-    endif
+    !if(iargs.ne.12) then
+    !    write(*,*) 'Error: incorrect number of command line arguments'
+    !    write(*,*) iargs
+   !     write(*,*) 'Correct Usage:'
+   !     write(*,*) '    pimc90 pimc.in system.in iseed.in binning.in interp.in pot.in atomperms.in output_dir checkpoint_dir checkpoint_output_filename checkpoint_input_filename blocking_filename'
+    !    stop
+   ! endif
 #else
 
     if(iargs.ne.9) then
@@ -82,10 +82,10 @@ program pimc90
     call getarg(6,POT_FILE)
     call getarg(7,IN_ATOMPERM)
     call getarg(8,OUT_DIRECTORY)
-    call getarg(9,CHECKPOINT_DIRECTORY)
-    call getarg(10,SFILENAME)
-    call getarg(11,RFILENAME)
-    call getarg(12,BFILENAME)
+    !call getarg(9,CHECKPOINT_DIRECTORY)
+    !call getarg(10,SFILENAME)
+    !call getarg(11,RFILENAME)
+    !call getarg(12,BFILENAME)
 #else
     call getarg(5,OUT_DIRECTORY)
     call getarg(6,CHECKPOINT_DIRECTORY)
@@ -117,7 +117,7 @@ program pimc90
     
     !make the output directory
     call system('mkdir -p '//trim(OUT_DIRECTORY))
-    call system('mkdir -p '//trim(CHECKPOINT_DIRECTORY))
+    !call system('mkdir -p '//trim(CHECKPOINT_DIRECTORY))
     
     !read the input files
     call read_system_data(sys,IN_SYSTEM)
@@ -130,7 +130,7 @@ program pimc90
  
 #if POT == 0
     !Initialise the modified shepard potential energy surface
-    call MSI_INIT(pot,sys,IN_INTERP,POT_FILE,IN_ATOMPERM,pimc%numBeadsEff)
+    call MSI_INIT(pot,sys,IN_INTERP,POT_FILE,IN_ATOMPERM,pimc%numBeadsEff,OUT_DIRECTORY)
 #endif
 
     ! calculate potential energies for the initial geometry

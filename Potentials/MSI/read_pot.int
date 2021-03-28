@@ -1,10 +1,11 @@
   interface 
-     subroutine read_pot(sys,interp,allpot,filename)
+     subroutine read_pot(sys,interp,allpot,filename,outdir)
         use molecule_specs
         use interpolation
         type (molsysdat), intent(in) :: sys
         type (interp_params), intent(inout) :: interp
         type (pot_data_point), dimension(:), pointer :: allpot
         character(len=80), intent(in) :: filename
+        character(len=80), intent(in) :: outdir
      end
   end interface
