@@ -46,7 +46,8 @@ program pimc90
     include 'pimc_setup.int'
 
     !Get the number of command line arguments
-    iargs = IARGC()
+    !iargs = IARGC()
+    iargs = command_argument_count()
   
     !If the number of command line arguments specified is not the number required
     !quit execution and print an error message

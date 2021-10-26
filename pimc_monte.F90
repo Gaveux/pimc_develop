@@ -11,7 +11,7 @@ module path_integral_monte_carlo
     use blocking
 
 #ifdef FREE_ENERGY
-    use free_energy
+!    use free_energy
 #endif
 
 #if POT == 0
@@ -80,24 +80,24 @@ module path_integral_monte_carlo
         print *, ' a1 =                                        ',pimc%act%a1
         print *, ' alpha =                                     ',pimc%act%alpha
 
-#ifdef FREE_ENERGY
-        print *, ' Compute Free Energy =                   ',pimc%doFree
-        if(pimc%doFree==1) then
-            if(pimc%free%free_type == 2) then
-                print *, ' Free Energy Type =                      ','Reversible Scaling'
-                print *, ' Initial Temperature =                   ',pimc%free%temp_init
-                print *, ' Final Temperature =                     ',pimc%free%temp_fin
-            elseif(pimc%free%free_type == 1) then
-                print *, ' Free Energy Type =                      ','Thermodynamic Integration : ref Potential'
-                print *, ' Currently not implemented'
-                stop ' Exiting'
-            elseif(pimc%free%free_type == 0) then
-                print *, ' Free Energy Type =                      ','Thermodynamic Integration : Classical to Quantum'
-                print *, ' Currently not implemented'
-                stop ' Exiting'
-            endif
-        endif
-#endif
+!#ifdef FREE_ENERGY
+!        print *, ' Compute Free Energy =                   ',pimc%doFree
+!        if(pimc%doFree==1) then
+!            if(pimc%free%free_type == 2) then
+!                print *, ' Free Energy Type =                      ','Reversible Scaling'
+!                print *, ' Initial Temperature =                   ',pimc%free%temp_init
+!                print *, ' Final Temperature =                     ',pimc%free%temp_fin
+!            elseif(pimc%free%free_type == 1) then
+!                print *, ' Free Energy Type =                      ','Thermodynamic Integration : ref Potential'
+!                print *, ' Currently not implemented'
+!                stop ' Exiting'
+!            elseif(pimc%free%free_type == 0) then
+!                print *, ' Free Energy Type =                      ','Thermodynamic Integration : Classical to Quantum'
+!                print *, ' Currently not implemented'
+!                stop ' Exiting'
+!            endif
+!        endif
+!#endif
         
             print *, '--------------------------------------------------------------------'
         if (pimc%Restart == 'y'.and.pimc%blocking == 'y') then
@@ -131,9 +131,9 @@ module path_integral_monte_carlo
         character(len=80), intent(in) :: checkpoint_dir
         character(len=80), intent(in) :: binning_in
         character(len=80) :: IN_ISEED
-#ifdef FREE_ENERGY
-        type (free_energy_type) :: free
-#endif
+!#ifdef FREE_ENERGY
+!        type (free_energy_type) :: free
+!#endif
         type (estimator) :: est
         type (action_vals) :: act
         type(bin_type) :: bins
@@ -193,15 +193,15 @@ module path_integral_monte_carlo
         act%act_old=0.0
         act%act=0.0
 
-#ifdef FREE_ENERGY
-        if(pimc%doFree==1) then
-            !initialise the free energy type
-            call new(free,pimc,sys%natom,sys%dimen)
-            if(pimc%free%free_type==2) then
-                call openFileOut(out_dir)
-            endif
-        endif
-#endif
+!#ifdef FREE_ENERGY
+!        if(pimc%doFree==1) then
+!            !initialise the free energy type
+!            call new(free,pimc,sys%natom,sys%dimen)
+!            if(pimc%free%free_type==2) then
+!                call openFileOut(out_dir)
+!            endif
+!        endif
+!#endif
     
         !initialise the types for binning parameters of the system
         call read_number_hist(binning_in, sys%nbond, n_bl, n_ba, n_d)
@@ -241,20 +241,20 @@ module path_integral_monte_carlo
                             call copy(Beads(ibead),OldBeads(ibead))
                         enddo
                         act%act_old = act%act
-#ifdef FREE_ENERGY
-                        !scale the coordinates for thermodynamic integration between the classical andquantum result
-                        if (pimc%free%free_type == 0 .and. pimc%doFree==1) then
-                            call scaleCoords(free,Beads,pimc,sys)
-                        endif
-#endif                  
+!#ifdef FREE_ENERGY
+!                        !scale the coordinates for thermodynamic integration between the classical andquantum result
+!                        if (pimc%free%free_type == 0 .and. pimc%doFree==1) then
+!                            call scaleCoords(free,Beads,pimc,sys)
+!                        endif
+!#endif                  
                         call trial_move(seedval,sys,pimc,Beads,atom_move,first_moved,last_moved)
-#ifdef FREE_ENERGY
-                        !If using classical to quantum scaling all the beads have to be updated
-                        if (pimc%free%free_type == 0.and. pimc%doFree==1) then
-                            first_moved=1
-                            last_moved = pimc%NumBeadsEff
-                        endif
-#endif
+!#ifdef FREE_ENERGY
+!                        !If using classical to quantum scaling all the beads have to be updated
+!                        if (pimc%free%free_type == 0.and. pimc%doFree==1) then
+!                            first_moved=1
+!                            last_moved = pimc%NumBeadsEff
+!                        endif
+!#endif
                         do i=first_moved,last_moved 
                             ind = mod(i-1,pimc%NumBeadsEff)+1
 #if POT == 0
@@ -265,12 +265,12 @@ module path_integral_monte_carlo
                             call potential(sys,Beads(ind)%x,Beads(ind)%r,Beads(ind)%VCurr,Beads(ind)%dVdx)
 #endif
                         enddo
-#ifdef FREE_ENERGY
-                        !Unscale the coordinates so the rest proceeds as normal
-                        if (pimc%free%free_type == 0.and. pimc%doFree==1) then
-                            call unscaleCoords(free,Beads,pimc,sys)
-                        endif
-#endif
+!#ifdef FREE_ENERGY
+!                        !Unscale the coordinates so the rest proceeds as normal
+!                        if (pimc%free%free_type == 0.and. pimc%doFree==1) then
+!                            call unscaleCoords(free,Beads,pimc,sys)
+!                        endif
+!#endif
                 
                         call copy (Beads(1),Beads(pimc%NumBeadsEff+1))
 
@@ -278,15 +278,15 @@ module path_integral_monte_carlo
                         call eval_action(sys,pimc,Beads,act)
 
                         ! now the actual Monte Carlo step!
-#ifdef FREE_ENERGY
-                        if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                            deltae = pimc%Beta*act%act - pimc%OldBeta*act%act_old
-                        else
-                            deltae = pimc%Beta*(act%act - act%act_old)
-                        endif
-#else
-                        deltae = pimc%Beta*(act%act - act%act_old)
-#endif
+!#ifdef FREE_ENERGY
+!                        if(pimc%free%free_type==2.and. pimc%doFree==1) then
+!                            deltae = pimc%Beta*act%act - pimc%OldBeta*act%act_old
+!                        else
+!                            deltae = pimc%Beta*(act%act - act%act_old)
+!                        endif
+!#else
+!                        deltae = pimc%Beta*(act%act - act%act_old)
+!#endif
                         !rand = genrand_real3()
                         rand = genrand_real(seedval%seedvalue)
 
@@ -312,9 +312,9 @@ module path_integral_monte_carlo
                         ! do some calculating of energy estimators and binning
                         if(equil) then
                         else
-#ifdef FREE_ENERGY
-                            if(pimc%doSample==1) then
-#endif
+!#ifdef FREE_ENERGY
+!                            if(pimc%doSample==1) then
+!#endif
                                 do i=1,pimc%NumBeads
                                     if(pimc%NumBeads*3==pimc%NumBeadsEff) then
                                         call updateBinning(bins,params,Beads(3*(i-1)+1)%x,Beads(i)%r)
@@ -325,27 +325,27 @@ module path_integral_monte_carlo
                               
                                ! call update energy(sys,pimc,Beads,results) see "module estimator_class" 
                                 call update(sys,pimc,Beads,est)
-#ifdef FREE_ENERGY
-                            endif
-
-                            if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                                call reversibleScaling(free,Beads,pimc,sys)
-                            endif
-                            
-#endif
+!#ifdef FREE_ENERGY
+!                            endif
+!
+!                            if(pimc%free%free_type==2.and. pimc%doFree==1) then
+!                                call reversibleScaling(free,Beads,pimc,sys)
+!                            endif
+!                            
+!#endif
                         endif
                     enddo
                 enddo
-#ifdef FREE_ENERGY
-                if(equil) then
-                else
-                    !If reversible scaling update the temperature at the end of each step
-                    if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                        call reversibleScalingStep(free,pimc,iter,dble(num_moves*atom_pass))
-                        call tempStep(pimc)
-                    endif
-                endif
-#endif      
+!#ifdef FREE_ENERGY
+!                if(equil) then
+!                else
+!                    !If reversible scaling update the temperature at the end of each step
+!                    if(pimc%free%free_type==2.and. pimc%doFree==1) then
+!                        call reversibleScalingStep(free,pimc,iter,dble(num_moves*atom_pass))
+!                        call tempStep(pimc)
+!                    endif
+!                endif
+!#endif      
             enddo
 
             !End of the step
@@ -375,18 +375,18 @@ module path_integral_monte_carlo
                ! do nothing 
 
             else
-#ifdef FREE_ENERGY
-                if(pimc%free%free_type==2.and. pimc%doFree==1) then
-                    call writeIntInternal(free,pimc,B_init)
-                    write(*,*) "Block: ", iblock, 'Final Temperature', pimc%Temperature
-                endif
-                if(pimc%doSample==1) then
-#endif
+!#ifdef FREE_ENERGY
+!                if(pimc%free%free_type==2.and. pimc%doFree==1) then
+!                    call writeIntInternal(free,pimc,B_init)
+!                    write(*,*) "Block: ", iblock, 'Final Temperature', pimc%Temperature
+!                endif
+!                if(pimc%doSample==1) then
+!#endif
                 call update_block(pimc,est)
 
-#ifdef FREE_ENERGY
-                endif
-#endif
+!#ifdef FREE_ENERGY
+!                endif
+!#endif
             endif
             pimc%NumBlocksLeft = pimc%NumBlocks - iblock
             pimc%BlocksToEquilLeft = pimc%BlocksToEquil - iblock
@@ -410,13 +410,13 @@ module path_integral_monte_carlo
             
             !write(*,*)  'End of the block ', iblock, ' seed value', seedval%seedvalue 
         enddo
-#ifdef FREE_ENERGY
-        if(pimc%doSample==1) then
-#endif
+!#ifdef FREE_ENERGY
+!        if(pimc%doSample==1) then
+!#endif
         call writeHistogram(bins,params,out_dir) 
-#ifdef FREE_ENERGY
-        endif
-#endif
+!#ifdef FREE_ENERGY
+!        endif
+!#endif
         !close tout
         if(pimc%Sample==1) then
             call writeTOUT(Beads(1)%x,Beads(1)%VCurr,out_dir,.True.,sys%natom,sys%dimen)
@@ -430,17 +430,17 @@ module path_integral_monte_carlo
         ! calculate total average energy and acceptance probability
         acctot=acctot/dble(pimc%NumBlocks)
         moveacctot=moveacctot/dble(pimc%NumBlocks)
-#ifdef FREE_ENERGY
-        if(pimc%doSample==1) then
-#endif
+!#ifdef FREE_ENERGY
+!        if(pimc%doSample==1) then
+!#endif
         call end_sim(est)
-#ifdef FREE_ENERGY
-        endif
-
-        if(pimc%free%free_type==2.and. pimc%doFree==1) then
-            call closeFileOut()
-        endif
-#endif
+!#ifdef FREE_ENERGY
+!        endif
+!
+!        if(pimc%free%free_type==2.and. pimc%doFree==1) then
+!            call closeFileOut()
+!        endif
+!#endif
         return
     end subroutine
 
