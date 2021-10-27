@@ -1,6 +1,6 @@
 
 
-subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp) 
+subroutine calcen(sys,interp,pot,neigh,Weightmp,r,V,dVdR,RawWeightTemp) 
     use molecule_specs
     use interpolation
 
@@ -11,13 +11,14 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     type (pot_data_point), dimension(:), pointer :: pot
     type (neighbour_list), intent(in) :: neigh
 
-    real(kind=8), dimension(:), intent(inout) :: Weight
+    real(kind=8), dimension(:), intent(inout) :: Weightmp
     real(kind=8), dimension(:), intent(in) :: RawWeightTemp
     real(kind=8), dimension(:), intent(in) :: r
     real(kind=8), intent(out) :: V
     real(kind=8), dimension(sys%nbond), intent(out) :: dVdR
 
-    real(kind=8), dimension(size(Weight)) :: Raw
+    real(kind=8), dimension(neigh%numInner) :: Raw
+    real(kind=8), dimension(neigh%numInner) :: Weight
     ! by defining the dimension of Raw to neigh%numInner, this restricts the
     ! size of array to the correct size w.r.t. each iteration within the dynamical array
     !real(kind=8), dimension(neigh%numInner) :: Raw
@@ -36,49 +37,57 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     !---------------------------------------------------
     !  Calculate the Weights 
     !---------------------------------------------------
-    !$OMP PARALLEL DO PRIVATE(i) SHARED(Raw, Weight)
+    !$acc data copyin(Weightmp(:),neigh%inner(:),neigh%numInner) create(Raw(:)) copyout(Weight(:))
+    !$acc parallel loop reduction(+:totsum)
     do i=1,neigh%numInner
-        Raw(i) = Weight(neigh%inner(i))
+       Raw(i) = Weightmp(neigh%inner(i))
+       totsum = totsum + Raw(i)
     enddo
-    !$OMP END PARALLEL DO 
-      
-    totsum = sum(Raw(1:neigh%numInner))
-    Weight = Raw/totsum
+
+    !$acc parallel loop
+    do i=1,neigh%numInner
+       Weight(i) = Raw(i)/totsum
+    enddo
+    !$acc end data 
+
+!    print *, Weight
+!    print *, ''
+!
+!    Weight = 0.d0
+!    do i=1,neigh%numInner
+!        Raw(i) = Weightmp(neigh%inner(i))
+!    enddo
+!      
+!    totsum = sum(Raw(1:neigh%numInner))
+!    Weight = Raw/totsum
+!    print *, Weight
+!    call exit(0)
    
     !---------------------------------------------------
     !  Calculate the derivatives of the weights
     !---------------------------------------------------
    
     ! derivative of raw weights
-    !!$OMP PARALLEL
-    !!$OMP DO
-    !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,temp,r)
     do k=1,neigh%numInner
-        temp = interp%ipow2*Weight(k)*RawWeightTemp(k)
+        temp = interp%ipow2*Weight(k)*RawWeightTemp(neigh%inner(k))
         do i=1,sys%nbond
             DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
         enddo
     enddo
-    !!$OMP END PARALLEL DO
     
     SumDWeight = 0.0
-    !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(SumDWeight,DWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
             SumDWeight(i) = SumDWeight(i) + DWeight(i,k)
         enddo
     enddo
-    !!$OMP END PARALLE DO   
 
     ! derivative of relative weights
-    !!$OMP PARALLEL DO PRIVATE(i,k) SHARED(DWeight,Weight,SumDWeight)
     do k=1,neigh%numInner
         do i=1,sys%nbond
             DWeight(i,k) = DWeight(i,k) - Weight(k)*SumDWeight(i)
         enddo
     enddo
-    !!$OMP END PARALLEL DO
-    !!$OMP END PARALLEL
     !---------------------------------------------------
     !  Evaluate (z-z0) the local internal coordinates
     !---------------------------------------------------

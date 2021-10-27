@@ -16,7 +16,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   type (neighbour_list), intent(out) :: neigh
 
   integer :: i,j
-  real(kind=8) totsum,tol, tmpWeight
+  real(kind=8) totsum,tol, tmpWeight, temp
 
   neigh%numInner=0    ! number of neighbours
   neigh%inner = 0      ! list of (inner) neighbours
@@ -28,15 +28,27 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
   ! the size of array r and pot(i)%r mismatch, this is a bug!!
   ! however it gives the correct result with a faster computing efficiency
   ! than the fixed version below
-  RawWeight = 0.d0
-  !$OMP PARALLEL DO PRIVATE(i) SHARED(r,RawWeight)
-  do i=1,interp%ndata
-     RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
-     RawWeight(i) = RawWeightTemp(i)**interp%ipow
+
+!  RawWeight = 0.d0
+!  do i=1,interp%ndata
+!     RawWeightTemp(i) = 1.0/(sum((r-pot(i)%r)**2))
+!     RawWeight(i) = RawWeightTemp(i)**interp%ipow
+!  enddo
+!  totsum = sum(RawWeight)
+
+  totsum = 0.d0
+  !$acc parallel loop gang reduction(+:totsum) copyin(interp%ipow,r(:),pot(:)) copy(totsum) copyout(RawWeightTemp(:),RawWeight(:))
+  do j=1,interp%ndata
+     temp = 0.d0
+     !$acc loop reduction(+:temp)
+     do i=1,sys%nbond
+        temp = temp + (r(i) - pot(j)%r(i))**2
+     enddo
+     RawWeightTemp(j) = 1.0/temp
+     RawWeight(j) = 1.0/(temp**interp%ipow)
+     totsum = totsum + RawWeight(j)
   enddo
-  !$OMP END PARALLEL DO
-  totsum = sum(RawWeight)
-  
+  !$acc end parallel loop
    
   !RawWeight = 0.d0
   !do j = 1, interp%ndata
