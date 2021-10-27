@@ -21,7 +21,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(neigh%numInner) :: Raw
     ! by defining the dimension of Raw to neigh%numInner, this restricts the
     ! size of array to the correct size w.r.t. each iteration within the dynamical array
-    !real(kind=8), dimension(neigh%numInner) :: Raw
     real(kind=8), dimension(sys%nbond,neigh%numInner) :: DWeight
     real(kind=8), dimension(neigh%numInner,sys%nbond) :: dTaydR
     real(kind=8), dimension(sys%nint,neigh%numInner) :: DTay
@@ -34,117 +33,118 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
     real(kind=8), dimension(sys%nint,neigh%numInner) :: z
     integer :: i,j,k
     
-    !---------------------------------------------------
-    !  Calculate the Weights 
-    !---------------------------------------------------
-    totsum = 0.d0
-    do i=1,neigh%numInner
-        Raw(i) = Weight(neigh%inner(i))
-    enddo
-
-    totsum = sum(Raw(1:neigh%numInner))
-
-    do i=1,neigh%numInner
-       testWeight(i) = Raw(i)/totsum
-    enddo
-
-    ! derivative of raw weights
-    do k=1,neigh%numInner
-    !print *, RawWeightTemp(k)
-        temp = interp%ipow2*testWeight(k)*RawWeightTemp(k)
-        do i=1,sys%nbond
-            DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
-        enddo
-    enddo
-    print *, DWeight
-
-    SumDWeight = 0.0
-    do k=1,neigh%numInner
-        do i=1,sys%nbond
-            SumDWeight(i) = SumDWeight(i) + DWeight(i,k)
-        enddo
-    enddo
-    !print *, SumDWeight
-
-    ! derivative of relative weights
-    do k=1,neigh%numInner
-        do i=1,sys%nbond
-            DWeight(i,k) = DWeight(i,k) - testWeight(k)*SumDWeight(i)
-        enddo
-    enddo
-    !print *, DWeight
-
-    z = 0.d0
-    do k=1,neigh%numInner
-        do j = 1,sys%nbond
-            do i = 1,sys%nint
-                z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
-            enddo
-        enddo
-    enddo
-
-    do k=1,neigh%numInner
-        do i=1,sys%nint
-            z(i,k) = z(i,k) - pot(neigh%inner(k))%z(i)
-        enddo
-!        print *, z(:,k)
-    enddo
-
-    !---------------------------------------------------
-    !  Calculate the energy
-    !---------------------------------------------------
-    do k=1,neigh%numInner
-        Tay(k) =  pot(neigh%inner(k))%v0
-    enddo
-
-    do k=1,neigh%numInner
-        do i=1,sys%nint
-            Tay(k) = Tay(k) + z(i,k)*(pot(neigh%inner(k))%v1(i) + 0.5*pot(neigh%inner(k))%v2(i)*z(i,k))
-        enddo
-    enddo
-    !print *, Tay
-
-    V =0.d0
-    do k=1,neigh%numInner
-        V = V + testWeight(k)*Tay(k)
-    enddo
-    !print *, V
-
-    !----------------------------------------------------------
-    !  Calculate the gradient of the energy (w.r.t internals)
-    !----------------------------------------------------------
-     
-    ! derivative of Taylor polynomial in local internals
-    do k=1,neigh%numInner
-        do i=1,sys%nint
-            DTay(i,k) = z(i,k)*pot(neigh%inner(k))%v2(i) + &
-            pot(neigh%inner(k))%v1(i)
-        enddo
-    enddo
-    !print *, DTay
-
-    ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
-    do j=1,sys%nbond
-        temp = -r(j)**2
-        do k=1,neigh%numInner
-            dTaydR(k,j) = 0.0
-            do i=1,sys%nint
-                dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
-            enddo
-            dTaydR(k,j) = dTaydR(k,j)*temp
-        enddo
-    enddo
-    !print *, dTaydR
-
-    ! gradient of the energy
-    dVdR = 0.0
-    do k=1,neigh%numInner
-        do i=1,sys%nbond
-            dVdR(i) = dVdR(i) + Tay(k)*DWeight(i,k) + testWeight(k)*dTaydR(k,i)
-        enddo
-    enddo
-
-    print *, ''
+!!    !---------------------------------------------------
+!!    !  Calculate the Weights 
+!!    !---------------------------------------------------
+!!    totsum = 0.d0
+!!    do i=1,neigh%numInner
+!!        Raw(i) = Weight(neigh%inner(i))
+!!    enddo
+!!
+!!    totsum = sum(Raw(1:neigh%numInner))
+!!
+!!    do i=1,neigh%numInner
+!!       testWeight(i) = Raw(i)/totsum
+!!    enddo
+!!
+!!    ! derivative of raw weights
+!!    do k=1,neigh%numInner
+!!    !print *, RawWeightTemp(k)
+!!        temp = interp%ipow2*testWeight(k)*RawWeightTemp(k)
+!!        do i=1,sys%nbond
+!!            DWeight(i,k) = temp*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+!!        enddo
+!!    enddo
+!!    !print *, DWeight
+!!
+!!    SumDWeight = 0.0
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nbond
+!!            SumDWeight(i) = SumDWeight(i) + DWeight(i,k)
+!!        enddo
+!!    enddo
+!!    !print *, SumDWeight
+!!
+!!    ! derivative of relative weights
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nbond
+!!            DWeight(i,k) = DWeight(i,k) - testWeight(k)*SumDWeight(i)
+!!        enddo
+!!    enddo
+!!    !print *, DWeight
+!!
+!!    z = 0.d0
+!!    do k=1,neigh%numInner
+!!        do j = 1,sys%nbond
+!!            do i = 1,sys%nint
+!!                z(i,k) = z(i,k) + pot(neigh%inner(k))%ut(i,j)*r(j)
+!!            enddo
+!!        enddo
+!!    enddo
+!!
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nint
+!!            z(i,k) = z(i,k) - pot(neigh%inner(k))%z(i)
+!!        enddo
+!!    enddo
+!!!    print *, z
+!!
+!!    !---------------------------------------------------
+!!    !  Calculate the energy
+!!    !---------------------------------------------------
+!!    do k=1,neigh%numInner
+!!        Tay(k) =  pot(neigh%inner(k))%v0
+!!    enddo
+!!
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nint
+!!            Tay(k) = Tay(k) + z(i,k)*(pot(neigh%inner(k))%v1(i) + 0.5*pot(neigh%inner(k))%v2(i)*z(i,k))
+!!        enddo
+!!    enddo
+!!!    print *, Tay
+!!
+!!    V =0.d0
+!!    do k=1,neigh%numInner
+!!        V = V + testWeight(k)*Tay(k)
+!!    enddo
+!!!    print *, V
+!!
+!!    !----------------------------------------------------------
+!!    !  Calculate the gradient of the energy (w.r.t internals)
+!!    !----------------------------------------------------------
+!!     
+!!    ! derivative of Taylor polynomial in local internals
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nint
+!!            DTay(i,k) = z(i,k)*pot(neigh%inner(k))%v2(i) + &
+!!            pot(neigh%inner(k))%v1(i)
+!!        enddo
+!!    enddo
+!!    !print *, DTay
+!!
+!!    ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
+!!    do j=1,sys%nbond
+!!        temp = -r(j)**2
+!!        do k=1,neigh%numInner
+!!            dTaydR(k,j) = 0.0
+!!            do i=1,sys%nint
+!!                dTaydR(k,j) = dTaydR(k,j) + DTay(i,k)*pot(neigh%inner(k))%ut(i,j)
+!!            enddo
+!!            dTaydR(k,j) = dTaydR(k,j)*temp
+!!        enddo
+!!    enddo
+!!    !print *, dTaydR
+!!
+!!    ! gradient of the energy
+!!    dVdR = 0.0
+!!    do k=1,neigh%numInner
+!!        do i=1,sys%nbond
+!!            dVdR(i) = dVdR(i) + Tay(k)*DWeight(i,k) + testWeight(k)*dTaydR(k,i)
+!!        enddo
+!!    enddo
+!    !print *, dVdR
+!
+!    !print *, ''
 
     totsum = 0.d0
     V = 0.d0
@@ -175,15 +175,21 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         !$acc loop vector
         do i=1,sys%nbond
             DWeight(i,k) = interp%ipow2*Weight(k)*RawWeightTemp(k)*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+            !print *, i, k, DWeight(i,k)
         enddo
     enddo
 
-    !$acc loop
-    do k=1,neigh%numInner
-       do i=1,sys%nbond
-          print *, i, k, DWeight(i,k)
-       enddo
-    enddo
+!    do concurrent(k=1 : neigh%numInner, i=1 : sys%nbond)
+!        DWeight(i,k) = interp%ipow2*Weight(k)*RawWeightTemp(k)*(r(i) - pot(neigh%inner(k))%r(i))*r(i)**2
+!    enddo
+
+!    !$acc wait(1)
+!    !$acc loop 
+!    do k=1,neigh%numInner
+!       do i=1,sys%nbond
+!          print *, i, k, DWeight(i,k)
+!       enddo
+!    enddo
 
     !$acc parallel loop gang async(1) 
     do k=1,sys%nbond
@@ -206,11 +212,6 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         enddo
     enddo
 
-!    do k=1,sys%nbond
-!       do i=1,neigh%numInner
-!          print *, i, k, DWeight(k,i)
-!       enddo
-!    enddo
     !---------------------------------------------------
     !  Evaluate (z-z0) the local internal coordinates
     !---------------------------------------------------
@@ -222,7 +223,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
 !        enddo
 !    enddo
 
-    !$acc parallel loop gang async(2) 
+    !$acc parallel loop gang async(2)
     do k=1,neigh%numInner
        !$acc loop worker
        do j=1,sys%nint
@@ -236,10 +237,13 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
        enddo
     enddo
 
-
-!!    do k=1,neigh%numInner
-!!          print *, z(:,k)
-!!    enddo
+!    !$acc wait(2)
+!    !$acc loop
+!    do k=1,neigh%numInner
+!       do j=1,sys%nint
+!          print *, j,k,z(j,k)
+!       enddo
+!    enddo
     
     !---------------------------------------------------
     !  Calculate the energy
@@ -258,8 +262,7 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
            Tay(k) = Tay(k) + z(i,k)*(pot(neigh%inner(k))%v1(i) + 0.5*pot(neigh%inner(k))%v2(i)*z(i,k))
         enddo
     enddo
-
-   
+    
     !$acc wait(1) async(2)
     !$acc parallel loop reduction(+:V) async(2)
     do k=1,neigh%numInner
@@ -279,7 +282,15 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
             pot(neigh%inner(k))%v1(i)
         enddo
     enddo
-   
+
+!    !$acc wait(2)
+!    !$acc loop
+!    do k=1, neigh%numInner
+!       do i=1,sys%nint
+!          print *, i,k,DTay(i,k)
+!       enddo
+!    enddo
+  
     ! derivative of the Taylor polynomical w.r.t bondlengths (NOT inverses)
     !$acc parallel loop gang worker async(2)
     do j=1,sys%nbond
@@ -295,9 +306,17 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         enddo
     enddo
 
+!    !$acc wait(2)
+!    !$acc loop
+!    do j=1,sys%nbond
+!       do k=1,neigh%numInner
+!          print *, j,k,dTaydR(k,j)
+!       enddo
+!    enddo
+
     ! gradient of the energy
     !$acc wait
-    !$acc parallel loop gang async(2)
+    !$acc parallel loop gang 
     do k=1,sys%nbond
         temp = 0.d0
         !$acc loop reduction(+:temp)
@@ -306,11 +325,10 @@ subroutine calcen(sys,interp,pot,neigh,Weight,r,V,dVdR,RawWeightTemp)
         enddo
         dVdR(k) = temp
     enddo
-
 !$acc end data
-    !!print *, dVdR
+    !print *, dVdR
     !!print *, '============================'
-    call exit(0)
+    !call exit(0)
     
   return
 end subroutine

@@ -41,12 +41,12 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
 
 
   totsum = 0.d0
-  !$acc parallel loop reduction(+:totsum) 
+!  !$acc parallel loop reduction(+:totsum) 
   do j=1,interp%ndata
      RawWeightTemp(j) = 0.d0
      RawWeight(j) = 0.d0
      tot = 0.d0
-     !$acc loop 
+!     !$acc loop 
      do i=1,size(r)
        tot = tot + (r(i) - pot(j)%r(i))**2 
      enddo
@@ -54,7 +54,7 @@ subroutine neighbour(sys,interp,pot,RawWeight,r,neigh,RawWeightTemp)
      RawWeight(j) = RawWeightTemp(j)**interp%ipow
      totsum = totsum + RawWeight(j)
   enddo
-  !$acc end parallel loop
+!  !$acc end parallel loop
 
 
   !----------------------------------------------------------
