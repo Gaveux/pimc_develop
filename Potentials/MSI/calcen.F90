@@ -3,6 +3,7 @@
 subroutine calcen(sys,interp,pot,neigh,Weightmp,r,V,dVdR,RawWeightTemp) 
     use molecule_specs
     use interpolation
+    use openacc
 
     implicit none
 
@@ -37,7 +38,7 @@ subroutine calcen(sys,interp,pot,neigh,Weightmp,r,V,dVdR,RawWeightTemp)
     !---------------------------------------------------
     !  Calculate the Weights 
     !---------------------------------------------------
-    !$acc data copyin(Weightmp(:),neigh%inner(:),neigh%numInner) create(Raw(:)) copyout(Weight(:))
+    !$acc data copyin(Weightmp(:),neigh) create(Raw(:)) copyout(Weight(:))
     !$acc parallel loop reduction(+:totsum)
     do i=1,neigh%numInner
        Raw(i) = Weightmp(neigh%inner(i))
