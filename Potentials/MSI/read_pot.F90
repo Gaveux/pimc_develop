@@ -48,7 +48,11 @@
 
       do i=1,interp%ndata
         !print *, ' allocating pot(',i,')'
+<<<<<<< HEAD
          call new(pot(i),sys%natom)
+=======
+         call new(pot(i),sys%nbond,sys%natom)
+>>>>>>> 4fc1dd96cba3908e374f1daf738cd9f25cb2474c
       enddo
 
 !  rewind and do a formatted read
