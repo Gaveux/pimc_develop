@@ -54,6 +54,10 @@ module interpolation
   interface perms
     module procedure InterpParams_perms
   end interface
+
+  interface end_perms
+    module procedure InterpParams_perms_clean
+  end interface
 contains
   
   subroutine InterpParams_perms(this,n,sys)
@@ -69,6 +73,16 @@ contains
     if (ierr.ne.0) stop ' Interp_params allocation error: bperm '
   end subroutine InterpParams_perms
 
+  subroutine InterpParams_perms_clean(this)
+    use molecule_specs
+    type (interp_params), intent(in) :: this
+    integer :: ierr
+
+    deallocate(this%aperm,stat=ierr)
+    if (ierr.ne.0) stop ' Error deallocating aperm '
+    deallocate(this%bperm,stat=ierr)
+    if (ierr.ne.0) stop ' Error deallocating bperm '
+  end subroutine InterpParams_perms_clean
   !--------------------------------------
   ! create a pot_data_point
   !--------------------------------------
