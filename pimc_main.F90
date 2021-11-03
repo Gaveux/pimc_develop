@@ -34,7 +34,7 @@ program pimc90
 
     real :: t1,t2,hours,minutes,seconds
     character(len=80) :: sfilename, rfilename, bfilename
-    integer :: i,iargs
+    integer :: i,iargs, ierr
  
     character(len=80) :: OUT_DIRECTORY, IN_PIMC, IN_SYSTEM, IN_ISEED, IN_BINNING
     character(len=80) :: CHECKPOINT_DIRECTORY
@@ -157,6 +157,19 @@ program pimc90
     call pimc_monte(seedval,sys,pimc,Beads,OldBeads,pot,OUT_DIRECTORY,CHECKPOINT_DIRECTORY,IN_BINNING)
 #else 
     call pimc_monte(seedval,sys,pimc,Beads,OldBeads,OUT_DIRECTORY,CHECKPOINT_DIRECTORY,IN_BINNING)
+#endif
+    
+    ! deallocate sys
+    call MolSysDat_rm(sys)
+    ! deallocate pimc beads
+    deallocate(Beads, stat=ierr)
+    if (ierr.ne.0) stop 'error deallocating Beads'
+    deallocate(OldBeads, stat=ierr)
+    if (ierr.ne.0) stop 'error deallocating OldBeads'
+    
+#if POT == 0
+    !deallocate MSI data
+    call end_msi(pot)
 #endif
     ! stop timer and print CPU time used
     call cpu_time(t2)

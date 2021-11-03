@@ -20,6 +20,10 @@ module molecule_specs
    interface new
      module procedure MolSysDat_init
    end interface
+   ! deallocate molsysdat
+   interface clean
+     module procedure MolSysDat_rm
+   end interface
 
  contains
    ! the allocation routine
@@ -50,5 +54,22 @@ module molecule_specs
      if (ierr.ne.0) stop ' molsysdat allocation error: mb '
      return
    end subroutine MolSysDat_init
+   
+   subroutine MolSysDat_rm(this)
+      type(molsysdat), intent(in) :: this
+      integer :: ierr
+
+      deallocate(this%EquilibriumGeom, stat=ierr)
+      if (ierr.ne.0) stop 'Error deallocating pimc_par%EquilibriumGeom'
+      deallocate(this%atom_label,stat=ierr)
+      if (ierr.ne.0) stop ' molsysdat deallocation error: atom_label '
+      deallocate(this%mass,stat=ierr)
+      if (ierr.ne.0) stop ' molsysdat deallocation error: mass '
+      deallocate(this%nb,stat=ierr)
+      if (ierr.ne.0) stop ' molsysdat deallocation error: nb '
+      deallocate(this%mb,stat=ierr)
+      if (ierr.ne.0) stop ' molsysdat deallocation error: mb '
+     
+   end subroutine
 
 end module molecule_specs

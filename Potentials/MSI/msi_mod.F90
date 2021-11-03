@@ -117,12 +117,18 @@
             
         end subroutine MSI_INIT
 
+        subroutine end_msi(this)
 
+            type(msi_params) , intent(in) :: this
+            integer :: ierr
 
+            call end_perms(this%interp)
 
+            deallocate(this%neighlist,stat=ierr)
+            if(ierr.ne.0) stop 'Error deallocating the neighbour list array in msi_mod.F90'
+            deallocate(this%pot,stat=ierr)
+            if(ierr.ne.0) stop 'Error deallocating pot'
 
-
-
-
+        end subroutine end_msi
 
       end module potential_msi
